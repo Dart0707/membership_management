@@ -3,7 +3,7 @@ import type { Dispatch, FormEvent, SetStateAction } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import type { Member, MemberFormData } from "@/lib/gym-members";
 import { CheckCircleIcon, DownloadIcon, PrinterIcon, QrIcon, ScanIcon, UserPlusIcon } from "@/components/icons";
-import { calculateExpiryDate } from "@/lib/gym-members";
+import { ACTIVITIES, calculateExpiryDate, getPlanPrice } from "@/lib/gym-members";
 import MemberQrCode from "@/components/MemberQrCode";
 
 export default function RegistrationTab({ formData, setFormData, handleRegisterSubmit, lastRegisteredMember, handleTestScanMember, referenceDate }: {
@@ -48,7 +48,7 @@ export default function RegistrationTab({ formData, setFormData, handleRegisterS
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Jordan Miller"
+                    placeholder="e.g. Joshua Sales"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="w-full bg-white border border-[#e4e6f0] rounded-xl px-4 py-2.5 text-[#151d3d] placeholder-[#8795db] focus:outline-none focus:border-[#5d70c7] focus:ring-1 focus:ring-[#5d70c7] transition"
@@ -63,20 +63,48 @@ export default function RegistrationTab({ formData, setFormData, handleRegisterS
                     <input
                       type="email"
                       required
-                      placeholder="jordan@example.com"
+                      placeholder="joshua.sales@example.com"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       className="w-full bg-white border border-[#e4e6f0] rounded-xl px-4 py-2.5 text-[#151d3d] placeholder-[#8795db] focus:outline-none focus:border-[#5d70c7] focus:ring-1 focus:ring-[#5d70c7] transition"
                     />
                   </div>
 
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-[#151d3d] mb-1">
+                        Activity <span className="text-[#6f80d2]">*</span>
+                      </label>
+                      <select
+                        value={formData.activity}
+                        onChange={(e) => setFormData({ ...formData, activity: e.target.value as MemberFormData["activity"] })}
+                        className="w-full bg-white border border-[#e4e6f0] rounded-xl px-4 py-2.5 text-[#151d3d] focus:outline-none focus:border-[#5d70c7]"
+                      >
+                        {ACTIVITIES.map((activity) => <option key={activity} value={activity}>{activity}</option>)}
+                      </select>
+                    </div>
+                    <label className="flex items-center gap-2 self-end pb-2.5 text-sm text-[#151d3d]">
+                      <input
+                        type="checkbox"
+                        checked={formData.isStudent}
+                        onChange={(e) => setFormData({ ...formData, isStudent: e.target.checked })}
+                        className="h-4 w-4 accent-[#5d70c7]"
+                      />
+                      Student discount
+                    </label>
+                  </div>
+
                   <div>
                     <label className="block text-xs font-semibold uppercase tracking-wider text-[#151d3d] mb-1">
-                      Phone Number
+                      Phone Number <span className="text-[#6f80d2]">*</span>
                     </label>
                     <input
                       type="tel"
-                      placeholder="+1 (555) 000-0000"
+                      required
+                      inputMode="tel"
+                      pattern="^09[0-9]{9}$"
+                      title="Use an 11-digit Philippine number starting with 09, such as 09171234567."
+                      placeholder="09171234567"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       className="w-full bg-white border border-[#e4e6f0] rounded-xl px-4 py-2.5 text-[#151d3d] placeholder-[#8795db] focus:outline-none focus:border-[#5d70c7] focus:ring-1 focus:ring-[#5d70c7] transition"
@@ -89,11 +117,10 @@ export default function RegistrationTab({ formData, setFormData, handleRegisterS
                   <label className="block text-xs font-semibold uppercase tracking-wider text-[#151d3d] mb-2">
                     Membership Tier <span className="text-[#6f80d2]">*</span>
                   </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                     {[
-                      { title: "1 Month", price: "Php1000", desc: "Short term" },
-                      { title: "3 Months", price: "Php2500", desc: "Popular" },
-                      { title: "1 Year", price: "Php10000", desc: "Best value" },
+                      { title: "Daily Pass", desc: "Valid today" },
+                      { title: "1 Month", desc: "Short term" },
                     ].map((p) => (
                       <button
                         type="button"
@@ -106,7 +133,9 @@ export default function RegistrationTab({ formData, setFormData, handleRegisterS
                         }`}
                       >
                         <div className="font-bold text-sm text-[#151d3d]">{p.title}</div>
-                        <div className="text-xs text-[#6f80d2] font-semibold mt-1">{p.price}</div>
+                        <div className="text-xs text-[#6f80d2] font-semibold mt-1">
+                          Php{getPlanPrice(formData.activity, p.title, formData.isStudent).toLocaleString()}
+                        </div>
                         <div className="text-[10px] text-[#8795db]">{p.desc}</div>
                       </button>
                     ))}
@@ -115,9 +144,13 @@ export default function RegistrationTab({ formData, setFormData, handleRegisterS
 
                 {/* Dynamic Calculated Expiry Display */}
                 <div className="p-3 bg-white rounded-xl border border-[#e4e6f0] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs">
-                  <span className="text-[#5d70c7]">Calculated Expiry Date:</span>
+                  <span className="text-[#5d70c7]">
+                    {formData.plan === "Daily Pass" ? "Daily Pass Valid Until:" : "Calculated Expiry Date:"}
+                  </span>
                   <span className="font-mono text-[#6f80d2] font-bold text-sm">
-                    {calculateExpiryDate(formData.plan, referenceDate)}
+                    {formData.plan === "Daily Pass"
+                      ? `${calculateExpiryDate(formData.plan, referenceDate)} at 11:59 PM`
+                      : calculateExpiryDate(formData.plan, referenceDate)}
                   </span>
                 </div>
 
