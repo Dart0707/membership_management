@@ -44,19 +44,34 @@ export default function ScannerTab({ members, scannedIdInput, setScannedIdInput,
         cameras[0];
 
       await scanner.start(
-        preferredCamera.id,
+        { facingMode: "environment" },
         {
           fps: 10,
           qrbox: (viewfinderWidth, viewfinderHeight) => {
-            const size = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.7);
-            return { width: Math.min(size, 300), height: Math.min(size, 300) };
+            const size = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.85);
+            return { width: Math.min(size, 420), height: Math.min(size, 420) };
           },
         },
         handleDecodedText,
         () => {
           // Decode failures are expected between successful scans.
         }
-      );
+      ).catch(async () => {
+        await scanner.start(
+          preferredCamera.id,
+          {
+            fps: 10,
+            qrbox: (viewfinderWidth, viewfinderHeight) => {
+              const size = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.85);
+              return { width: Math.min(size, 420), height: Math.min(size, 420) };
+            },
+          },
+          handleDecodedText,
+          () => {
+            // Decode failures are expected between successful scans.
+          }
+        );
+      });
     };
 
     startScanner()
@@ -166,8 +181,8 @@ export default function ScannerTab({ members, scannedIdInput, setScannedIdInput,
               {/* Webcam Feed Box */}
               {isCameraActive && (
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 sm:p-4 overflow-hidden text-center">
-                  <div className="relative aspect-video bg-slate-950 rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center">
-                    <div id="member-qr-reader" className="w-full h-full min-h-52 sm:min-h-64" />
+                  <div className="relative aspect-[4/3] bg-slate-950 rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center">
+                    <div id="member-qr-reader" className="w-full h-full min-h-72 sm:min-h-[28rem]" />
                   </div>
                   <p className="text-[11px] text-slate-500 mt-2">
                     Position the member&apos;s QR code in front of the lens.
