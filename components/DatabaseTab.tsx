@@ -9,12 +9,12 @@ export default function DatabaseTab({ filteredMembers, searchQuery, setSearchQue
   handleDeleteMember: (memberId: string) => void; referenceDate: string;
 }) {
   return (
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl space-y-6">
             
             {/* Database Header & Filters */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <h2 className="text-lg sm:text-xl font-bold text-white flex items-start gap-2">
                   <DatabaseIcon />
                   <span>Gym Member Directory</span>
                 </h2>
@@ -24,7 +24,7 @@ export default function DatabaseTab({ filteredMembers, searchQuery, setSearchQue
               </div>
 
               {/* Filters */}
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 <input
                   type="text"
                   placeholder="Search by name, email, or ID..."
@@ -36,7 +36,7 @@ export default function DatabaseTab({ filteredMembers, searchQuery, setSearchQue
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                  className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 w-full sm:w-auto"
                 >
                   <option value="ALL">All Statuses</option>
                   <option value="ACTIVE">Active Only</option>
@@ -47,7 +47,7 @@ export default function DatabaseTab({ filteredMembers, searchQuery, setSearchQue
 
             {/* Members Table */}
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-300">
+              <table className="min-w-[760px] w-full text-left text-xs text-slate-300">
                 <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
                   <tr>
                     <th className="p-3.5">Member ID</th>

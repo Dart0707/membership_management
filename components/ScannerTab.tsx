@@ -86,14 +86,14 @@ export default function ScannerTab({ members, scannedIdInput, setScannedIdInput,
   }, [isCameraActive, setIsCameraActive, setScanMessage, setScannedIdInput]);
 
   return (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-8 items-start">
             
             {/* Scanner Controls & Camera Feed (6 cols) */}
             <div className="lg:col-span-6 space-y-6">
               
               {/* Manual Lookup & Simulator Box */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
-                <h2 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl">
+                <h2 className="text-lg font-bold text-white mb-2 flex items-start gap-2">
                   <ScanIcon />
                   <span>Front Desk Scan Hub</span>
                 </h2>
@@ -130,7 +130,7 @@ export default function ScannerTab({ members, scannedIdInput, setScannedIdInput,
                     e.preventDefault();
                     performScan();
                   }}
-                  className="flex gap-2"
+                  className="flex flex-col sm:flex-row gap-2"
                 >
                   <input
                     type="text"
@@ -147,7 +147,7 @@ export default function ScannerTab({ members, scannedIdInput, setScannedIdInput,
                   </button>
                 </form>
 
-                <div className="mt-4 flex items-center justify-between pt-4 border-t border-slate-800">
+                <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-4 border-t border-slate-800">
                   <span className="text-xs text-slate-400">Webcam Scanner Feed:</span>
                   <button
                     type="button"
@@ -165,9 +165,9 @@ export default function ScannerTab({ members, scannedIdInput, setScannedIdInput,
 
               {/* Webcam Feed Box */}
               {isCameraActive && (
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 overflow-hidden text-center">
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 sm:p-4 overflow-hidden text-center">
                   <div className="relative aspect-video bg-slate-950 rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center">
-                    <div id="member-qr-reader" className="w-full h-full min-h-64" />
+                    <div id="member-qr-reader" className="w-full h-full min-h-52 sm:min-h-64" />
                   </div>
                   <p className="text-[11px] text-slate-500 mt-2">
                     Position the member&apos;s QR code in front of the lens.
@@ -181,7 +181,7 @@ export default function ScannerTab({ members, scannedIdInput, setScannedIdInput,
             <div className="lg:col-span-6">
               {scannedResult ? (
                 <div
-                  className={`bg-slate-900 border-2 rounded-2xl p-6 shadow-2xl relative overflow-hidden transition-all duration-300 ${
+                  className={`bg-slate-900 border-2 rounded-2xl p-4 sm:p-6 shadow-2xl relative overflow-hidden transition-all duration-300 ${
                     isMemberActive(scannedResult.expiryDate, referenceDate)
                       ? "border-emerald-500 shadow-emerald-500/10"
                       : "border-rose-500 shadow-rose-500/10"
@@ -213,15 +213,15 @@ export default function ScannerTab({ members, scannedIdInput, setScannedIdInput,
                   </div>
 
                   {/* Member Profile Card */}
-                  <div className="flex items-start gap-4 mb-6">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-slate-800 to-slate-700 flex items-center justify-center text-slate-300 text-xl font-bold border border-slate-700">
+                  <div className="flex items-start gap-3 sm:gap-4 mb-6">
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-2xl bg-gradient-to-tr from-slate-800 to-slate-700 flex items-center justify-center text-slate-300 text-xl font-bold border border-slate-700">
                       {scannedResult.name
                         .split(" ")
                         .map((n) => n[0])
                         .join("")}
                     </div>
                     <div>
-                      <h3 className="text-2xl font-black text-white">{scannedResult.name}</h3>
+                      <h3 className="text-xl sm:text-2xl font-black text-white break-words">{scannedResult.name}</h3>
                       <p className="text-xs text-slate-400">{scannedResult.email}</p>
                       <p className="text-xs text-slate-400 mt-0.5">{scannedResult.phone}</p>
                     </div>

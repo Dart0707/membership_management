@@ -24,14 +24,14 @@ export default function RegistrationTab({ formData, setFormData, handleRegisterS
   };
 
   return (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-8 items-start">
             
             {/* Registration Form (7 cols) */}
-            <div className="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+            <div className="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
               
               <div className="mb-6">
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <h2 className="text-lg sm:text-xl font-bold text-white flex items-start gap-2">
                   <UserPlusIcon />
                   <span>Register New Gym Member</span>
                 </h2>
@@ -89,7 +89,7 @@ export default function RegistrationTab({ formData, setFormData, handleRegisterS
                   <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
                     Membership Tier <span className="text-emerald-400">*</span>
                   </label>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
                     {[
                       { title: "1 Month", price: "$49", desc: "Short term" },
                       { title: "3 Months", price: "$129", desc: "Popular" },
@@ -114,7 +114,7 @@ export default function RegistrationTab({ formData, setFormData, handleRegisterS
                 </div>
 
                 {/* Dynamic Calculated Expiry Display */}
-                <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between text-xs">
+                <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs">
                   <span className="text-slate-400">Calculated Expiry Date:</span>
                   <span className="font-mono text-emerald-400 font-bold text-sm">
                     {calculateExpiryDate(formData.plan, referenceDate)}
@@ -134,14 +134,14 @@ export default function RegistrationTab({ formData, setFormData, handleRegisterS
             {/* Generated QR Pass Preview Card (5 cols) */}
             <div className="lg:col-span-5">
               {lastRegisteredMember ? (
-                <div className="bg-slate-900 border border-emerald-500/30 rounded-2xl p-6 shadow-2xl relative text-center">
+                <div className="bg-slate-900 border border-emerald-500/30 rounded-2xl p-4 sm:p-6 shadow-2xl relative text-center">
                   <div className="inline-flex items-center space-x-1.5 px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-full text-xs font-semibold mb-4">
                     <CheckCircleIcon />
                     <span>Member Successfully Registered!</span>
                   </div>
 
-                  <div className="bg-white p-4 rounded-xl inline-block shadow-inner mb-4 border border-slate-200">
-                    <MemberQrCode memberId={lastRegisteredMember.id} size={220} />
+                  <div className="bg-white p-3 sm:p-4 rounded-xl inline-block shadow-inner mb-4 border border-slate-200">
+                    <MemberQrCode memberId={lastRegisteredMember.id} size={200} />
                     <div className="mt-2 text-slate-900 font-mono font-bold text-sm tracking-wider">
                       {lastRegisteredMember.id}
                     </div>

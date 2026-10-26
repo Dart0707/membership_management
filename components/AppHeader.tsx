@@ -6,26 +6,26 @@ export default function AppHeader({ activeTab, setActiveTab, activeCount, expire
 }) {
   return (
       <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 flex flex-col md:flex-row items-center justify-between gap-3 md:gap-4">
           
           {/* Gym Brand Logo */}
-          <div className="flex items-center space-x-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+          <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0 w-full md:w-auto">
+            <div className="h-9 w-9 sm:h-10 sm:w-10 shrink-0 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
               <span className="font-extrabold text-slate-950 text-xl tracking-tighter">FP</span>
             </div>
-            <div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
-                MTFC <span className="text-emerald-400 text-sm font-semibold uppercase tracking-widest ml-1">Gym Desk</span>
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-xl font-bold truncate bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+                MTFC <span className="text-emerald-400 text-xs sm:text-sm font-semibold uppercase tracking-widest ml-1">Gym Desk</span>
               </h1>
-              <p className="text-xs text-slate-400">QR Member Check-In & Management System</p>
+              <p className="hidden sm:block text-xs text-slate-400 truncate">QR Member Check-In & Management System</p>
             </div>
           </div>
 
           {/* Navigation Tabs */}
-          <nav className="flex items-center bg-slate-950/80 p-1 rounded-xl border border-slate-800/80 shadow-inner">
+          <nav className="grid grid-cols-3 items-stretch w-full md:w-auto md:flex bg-slate-950/80 p-1 rounded-xl border border-slate-800/80 shadow-inner">
             <button
               onClick={() => setActiveTab("register")}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+              className={`flex items-center justify-center gap-1 md:gap-2 px-1.5 sm:px-3 md:px-4 py-2 rounded-lg text-[10px] sm:text-xs md:text-sm leading-tight font-medium transition-all duration-200 ${
                 activeTab === "register"
                   ? "bg-emerald-500 text-slate-950 font-bold shadow-md shadow-emerald-500/20"
                   : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
@@ -37,7 +37,7 @@ export default function AppHeader({ activeTab, setActiveTab, activeCount, expire
 
             <button
               onClick={() => setActiveTab("scanner")}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+              className={`flex items-center justify-center gap-1 md:gap-2 px-1.5 sm:px-3 md:px-4 py-2 rounded-lg text-[10px] sm:text-xs md:text-sm leading-tight font-medium transition-all duration-200 ${
                 activeTab === "scanner"
                   ? "bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/20"
                   : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
@@ -49,7 +49,7 @@ export default function AppHeader({ activeTab, setActiveTab, activeCount, expire
 
             <button
               onClick={() => setActiveTab("database")}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+              className={`flex items-center justify-center gap-1 md:gap-2 px-1.5 sm:px-3 md:px-4 py-2 rounded-lg text-[10px] sm:text-xs md:text-sm leading-tight font-medium transition-all duration-200 ${
                 activeTab === "database"
                   ? "bg-indigo-500 text-white font-bold shadow-md shadow-indigo-500/20"
                   : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
