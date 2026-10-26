@@ -4,7 +4,6 @@ import React, { useState, useEffect, useMemo } from "react";
 import {
   calculateExpiryDate,
   DEFAULT_REFERENCE_DATE,
-  INITIAL_MEMBERS,
   isMemberActive,
   type Member,
   type MemberFormData,
@@ -26,7 +25,7 @@ import ScannerTab from "@/components/ScannerTab";
 
 export default function App() {
   // --- STATE ---
-  const [members, setMembers] = useState<Member[]>(INITIAL_MEMBERS);
+  const [members, setMembers] = useState<Member[]>([]);
   const [referenceDate, setReferenceDate] = useState(DEFAULT_REFERENCE_DATE);
   const [activeTab, setActiveTab] = useState("register"); // 'register' | 'scanner' | 'database'
   
@@ -65,7 +64,7 @@ export default function App() {
         console.error("Unable to load stored gym members:", error);
       }
     } else {
-      localStorage.setItem("gym_members_v1", JSON.stringify(INITIAL_MEMBERS));
+      localStorage.setItem("gym_members_v1", JSON.stringify([]));
     }
 
     fetchMembers()

@@ -134,7 +134,7 @@ export default function ScannerTab({ members, scannedIdInput, setScannedIdInput,
                 >
                   <input
                     type="text"
-                    placeholder="Enter Member ID (e.g. GYM-8492-A)"
+                    placeholder="Enter Member ID (e.g. GYM-1234-A)"
                     value={scannedIdInput}
                     onChange={(e) => setScannedIdInput(e.target.value)}
                     className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-cyan-500"
