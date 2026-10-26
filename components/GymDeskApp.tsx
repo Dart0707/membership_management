@@ -209,7 +209,7 @@ export default function App() {
   const expiredCount = members.length - activeCount;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-12 flex flex-col">
+    <div className="min-h-screen bg-transparent text-[#151d3d] font-sans pb-12 flex flex-col">
       <AppHeader activeTab={activeTab} setActiveTab={setActiveTab} activeCount={activeCount} expiredCount={expiredCount} />
       <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 flex-1 w-full">
         {activeTab === "register" && <RegistrationTab formData={formData} setFormData={setFormData} handleRegisterSubmit={handleRegisterSubmit} lastRegisteredMember={lastRegisteredMember} handleTestScanMember={handleTestScanMember} referenceDate={referenceDate} />}

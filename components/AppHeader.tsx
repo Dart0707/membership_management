@@ -1,34 +1,42 @@
 import type { Dispatch, SetStateAction } from "react";
+import Image from "next/image";
 import { DatabaseIcon, ScanIcon, UserPlusIcon } from "@/components/icons";
 
 export default function AppHeader({ activeTab, setActiveTab, activeCount, expiredCount }: {
   activeTab: string; setActiveTab: Dispatch<SetStateAction<string>>; activeCount: number; expiredCount: number;
 }) {
   return (
-      <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-30">
+      <header className="border-b border-[#e4e6f0] bg-white/90 backdrop-blur sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 flex flex-col md:flex-row items-center justify-between gap-3 md:gap-4">
           
           {/* Gym Brand Logo */}
           <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0 w-full md:w-auto">
-            <div className="h-9 w-9 sm:h-10 sm:w-10 shrink-0 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-              <span className="font-extrabold text-slate-950 text-xl tracking-tighter">FP</span>
+            <div className="h-12 w-20 sm:h-14 sm:w-24 shrink-0 rounded-xl bg-white flex items-center justify-center overflow-hidden shadow-sm border border-[#e4e6f0]">
+              <Image
+                src="/logo.png"
+                alt="MTFC logo"
+                width={96}
+                height={96}
+                className="h-full w-full object-contain"
+                priority
+              />
             </div>
             <div className="min-w-0">
-              <h1 className="text-lg sm:text-xl font-bold truncate bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
-                MTFC <span className="text-emerald-400 text-xs sm:text-sm font-semibold uppercase tracking-widest ml-1">Gym Desk</span>
+              <h1 className="text-lg sm:text-xl font-bold truncate bg-gradient-to-r from-[#151d3d] via-[#151d3d] to-[#5d70c7] bg-clip-text text-transparent">
+                <span className="text-[#6f80d2] text-xs sm:text-sm font-semibold uppercase tracking-widest ml-1">Gym Desk</span>
               </h1>
-              <p className="hidden sm:block text-xs text-slate-400 truncate">QR Member Check-In & Management System</p>
+              <p className="hidden sm:block text-xs text-[#5d70c7] truncate">QR Member Check-In & Management System</p>
             </div>
           </div>
 
           {/* Navigation Tabs */}
-          <nav className="grid grid-cols-3 items-stretch w-full md:w-auto md:flex bg-slate-950/80 p-1 rounded-xl border border-slate-800/80 shadow-inner">
+          <nav className="grid grid-cols-3 items-stretch w-full md:w-auto md:flex bg-white/90 p-1 rounded-xl border border-[#e4e6f0]/80 shadow-inner">
             <button
               onClick={() => setActiveTab("register")}
               className={`flex items-center justify-center gap-1 md:gap-2 px-1.5 sm:px-3 md:px-4 py-2 rounded-lg text-[10px] sm:text-xs md:text-sm leading-tight font-medium transition-all duration-200 ${
                 activeTab === "register"
-                  ? "bg-emerald-500 text-slate-950 font-bold shadow-md shadow-emerald-500/20"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+                  ? "bg-[#5d70c7] text-[#151d3d] font-bold shadow-md shadow-[#5d70c7]/20"
+                  : "text-[#5d70c7] hover:text-[#151d3d] hover:bg-white"
               }`}
             >
               <UserPlusIcon />
@@ -39,8 +47,8 @@ export default function AppHeader({ activeTab, setActiveTab, activeCount, expire
               onClick={() => setActiveTab("scanner")}
               className={`flex items-center justify-center gap-1 md:gap-2 px-1.5 sm:px-3 md:px-4 py-2 rounded-lg text-[10px] sm:text-xs md:text-sm leading-tight font-medium transition-all duration-200 ${
                 activeTab === "scanner"
-                  ? "bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/20"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+                  ? "bg-[#5d70c7] text-[#151d3d] font-bold shadow-md shadow-[#5d70c7]/20"
+                  : "text-[#5d70c7] hover:text-[#151d3d] hover:bg-white"
               }`}
             >
               <ScanIcon />
@@ -51,8 +59,8 @@ export default function AppHeader({ activeTab, setActiveTab, activeCount, expire
               onClick={() => setActiveTab("database")}
               className={`flex items-center justify-center gap-1 md:gap-2 px-1.5 sm:px-3 md:px-4 py-2 rounded-lg text-[10px] sm:text-xs md:text-sm leading-tight font-medium transition-all duration-200 ${
                 activeTab === "database"
-                  ? "bg-indigo-500 text-white font-bold shadow-md shadow-indigo-500/20"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+                  ? "bg-[#5d70c7] text-[#151d3d] font-bold shadow-md shadow-[#5d70c7]/20"
+                  : "text-[#5d70c7] hover:text-[#151d3d] hover:bg-white"
               }`}
             >
               <DatabaseIcon />
@@ -62,15 +70,15 @@ export default function AppHeader({ activeTab, setActiveTab, activeCount, expire
 
           {/* Quick Metrics */}
           <div className="hidden lg:flex items-center space-x-4 text-xs font-medium">
-            <div className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center space-x-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span className="text-slate-400">Active Passes:</span>
-              <span className="text-emerald-400 font-bold">{activeCount}</span>
+            <div className="px-3 py-1.5 rounded-lg bg-[#e4e6f0]/30 border border-[#c4c9df]/60 flex items-center space-x-2">
+              <span className="w-2 h-2 rounded-full bg-[#6f80d2] animate-pulse"></span>
+              <span className="text-[#5d70c7]">Active Passes:</span>
+              <span className="text-[#6f80d2] font-bold">{activeCount}</span>
             </div>
-            <div className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center space-x-2">
-              <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-              <span className="text-slate-400">Expired:</span>
-              <span className="text-rose-400 font-bold">{expiredCount}</span>
+            <div className="px-3 py-1.5 rounded-lg bg-[#fae5e8]/20 border border-[#f8cbd1]/60 flex items-center space-x-2">
+              <span className="w-2 h-2 rounded-full bg-[#f26173]"></span>
+              <span className="text-[#5d70c7]">Expired:</span>
+              <span className="text-[#f26173] font-bold">{expiredCount}</span>
             </div>
           </div>
 
