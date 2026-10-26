@@ -6,7 +6,8 @@ member record management from a single browser interface.
 
 ## Features
 
-- Register members on 1-month, 3-month, or 1-year plans
+- Register members on daily or 1-month plans
+- Price daily and monthly passes by activity, with student discounts
 - Generate a QR code for each member pass
 - Check members in by scanning a QR code or entering a member ID
 - Grant access only to active memberships and track check-ins

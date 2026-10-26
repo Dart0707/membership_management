@@ -4,18 +4,43 @@ export type Member = {
   email: string;
   phone: string;
   plan: string;
+  activity: Activity;
+  isStudent: boolean;
+  price: number;
   registrationDate: string;
   expiryDate: string;
   checkIns: number;
 };
 
-export type MemberFormData = Pick<Member, "name" | "email" | "phone" | "plan">;
+export type Activity = "Gym" | "Boxing" | "Muay Thai" | "Brazilian Jiu Jitsu";
+export type MemberFormData = Pick<Member, "name" | "email" | "phone" | "plan" | "activity" | "isStudent">;
 export type ScanResult = Member & { isJustCheckedIn: boolean };
 export type ScanMessage =
   | { type: "SUCCESS" | "EXPIRED" | "ERROR"; text: string }
   | null;
 
 export const DEFAULT_REFERENCE_DATE = "1970-01-01";
+export const ACTIVITIES: Activity[] = ["Gym", "Boxing", "Muay Thai", "Brazilian Jiu Jitsu"];
+
+export function normalizePhilippinePhone(phone: string) {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("09") && digits.length === 11) return digits;
+  return null;
+}
+
+const ACTIVITY_PRICES: Record<Activity, { daily: number; studentDaily: number; monthly: number; studentMonthly: number }> = {
+  Gym: { daily: 100, studentDaily: 100, monthly: 1000, studentMonthly: 800 },
+  Boxing: { daily: 250, studentDaily: 220, monthly: 2800, studentMonthly: 2700 },
+  "Muay Thai": { daily: 270, studentDaily: 250, monthly: 3200, studentMonthly: 3000 },
+  "Brazilian Jiu Jitsu": { daily: 250, studentDaily: 220, monthly: 2800, studentMonthly: 2700 },
+};
+
+export function getPlanPrice(activity: Activity, plan: string, isStudent: boolean) {
+  const prices = ACTIVITY_PRICES[activity];
+  if (plan === "Daily Pass") return isStudent ? prices.studentDaily : prices.daily;
+  if (plan === "1 Month") return isStudent ? prices.studentMonthly : prices.monthly;
+  return 0;
+}
 
 export function getDaysRemaining(
   expiryDateStr: string,
@@ -38,12 +63,10 @@ export function isMemberActive(
 
 export function calculateExpiryDate(planType: string, startDate: Date | string) {
   const result = new Date(startDate);
-  if (planType === "1 Month") {
+  if (planType === "Daily Pass") {
+    return result.toISOString().split("T")[0];
+  } else if (planType === "1 Month") {
     result.setMonth(result.getMonth() + 1);
-  } else if (planType === "3 Months") {
-    result.setMonth(result.getMonth() + 3);
-  } else if (planType === "1 Year") {
-    result.setFullYear(result.getFullYear() + 1);
   }
   return result.toISOString().split("T")[0];
 }

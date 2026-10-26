@@ -1,13 +1,22 @@
+import { useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { Member } from "@/lib/gym-members";
 import { DatabaseIcon } from "@/components/icons";
-import { isMemberActive } from "@/lib/gym-members";
+import { calculateExpiryDate, isMemberActive } from "@/lib/gym-members";
 
-export default function DatabaseTab({ filteredMembers, searchQuery, setSearchQuery, statusFilter, setStatusFilter, setSelectedQrModalMember, handleToggleExpiry, handleTestScanMember, handleDeleteMember, referenceDate }: {
+export default function DatabaseTab({ filteredMembers, searchQuery, setSearchQuery, statusFilter, setStatusFilter, setSelectedQrModalMember, handleToggleExpiry, handleRenewMember, handleTestScanMember, handleDeleteMember, referenceDate }: {
   filteredMembers: Member[]; searchQuery: string; setSearchQuery: Dispatch<SetStateAction<string>>; statusFilter: string; setStatusFilter: Dispatch<SetStateAction<string>>;
-  setSelectedQrModalMember: Dispatch<SetStateAction<Member | null>>; handleToggleExpiry: (memberId: string) => void; handleTestScanMember: (member: Member) => void;
+  setSelectedQrModalMember: Dispatch<SetStateAction<Member | null>>; handleToggleExpiry: (memberId: string) => void; handleRenewMember: (memberId: string, plan: string) => void | Promise<void>; handleTestScanMember: (member: Member) => void;
   handleDeleteMember: (memberId: string) => void; referenceDate: string;
 }) {
+  const [renewingMember, setRenewingMember] = useState<Member | null>(null);
+  const [renewalPlan, setRenewalPlan] = useState("1 Month");
+
+  const openRenewal = (member: Member) => {
+    setRenewingMember(member);
+    setRenewalPlan(member.plan === "Daily Pass" ? "1 Month" : member.plan);
+  };
+
   return (
           <div className="bg-white/90 border border-[#c4c9df]/60 rounded-2xl p-4 sm:p-6 shadow-xl shadow-[#e4e6f0]/30 space-y-6">
             
@@ -98,6 +107,13 @@ export default function DatabaseTab({ filteredMembers, searchQuery, setSearchQue
                               QR
                             </button>
 
+                            <button
+                              onClick={() => openRenewal(member)}
+                              className="px-2.5 py-1 bg-[#f26173]/10 hover:bg-[#f26173]/20 text-[#f26173] rounded-lg text-[11px] font-semibold transition"
+                            >
+                              Renew
+                            </button>
+
                             {/* Toggle Expiry Test Button */}
                             <button
                               onClick={() => handleToggleExpiry(member.id)}
@@ -136,6 +152,58 @@ export default function DatabaseTab({ filteredMembers, searchQuery, setSearchQue
                 </tbody>
               </table>
             </div>
+
+            {renewingMember && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#151d3d]/40 p-4">
+                <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
+                  <h3 className="text-lg font-bold text-[#151d3d]">Renew Membership</h3>
+                  <p className="mt-1 text-sm text-[#5d70c7]">
+                    {renewingMember.name} · Current expiry: {renewingMember.expiryDate}
+                  </p>
+                  <label className="mt-5 block text-xs font-semibold uppercase tracking-wider text-[#151d3d]">
+                    Renewal Plan
+                  </label>
+                  <select
+                    value={renewalPlan}
+                    onChange={(event) => setRenewalPlan(event.target.value)}
+                    className="mt-2 w-full rounded-xl border border-[#e4e6f0] bg-white px-3 py-2.5 text-sm text-[#151d3d] focus:outline-none focus:border-[#5d70c7]"
+                  >
+                    <option value="Daily Pass">Daily Pass - Php200</option>
+                    <option value="1 Month">1 Month - Php1000</option>
+                  </select>
+                  <p className="mt-3 rounded-xl border border-[#e4e6f0] bg-white px-3 py-2 text-xs text-[#5d70c7]">
+                    New expiry:{" "}
+                    <span className="font-mono font-bold text-[#6f80d2]">
+                      {calculateExpiryDate(
+                        renewalPlan,
+                        isMemberActive(renewingMember.expiryDate, referenceDate)
+                          ? renewingMember.expiryDate
+                          : referenceDate
+                      )}
+                    </span>
+                  </p>
+                  <div className="mt-5 flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setRenewingMember(null)}
+                      className="rounded-xl border border-[#e4e6f0] px-4 py-2 text-sm font-semibold text-[#5d70c7]"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleRenewMember(renewingMember.id, renewalPlan);
+                        setRenewingMember(null);
+                      }}
+                      className="rounded-xl bg-[#5d70c7] px-4 py-2 text-sm font-bold text-[#151d3d]"
+                    >
+                      Confirm Renewal
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
           </div>
   );

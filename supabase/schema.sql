@@ -4,10 +4,17 @@ create table if not exists public.members (
   email text not null,
   phone text not null,
   plan text not null,
+  activity text not null default 'Gym',
+  is_student boolean not null default false,
+  price numeric not null default 0,
   registration_date date not null,
   expiry_date date not null,
   check_ins integer not null default 0
 );
+
+alter table public.members add column if not exists activity text not null default 'Gym';
+alter table public.members add column if not exists is_student boolean not null default false;
+alter table public.members add column if not exists price numeric not null default 0;
 
 alter table public.members enable row level security;
 
