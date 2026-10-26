@@ -1,36 +1,102 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Gym Desk
 
-## Getting Started
+Gym Desk is a small membership management app for front-desk operations. It
+handles member registration, QR pass generation, check-in validation, and
+member record management from a single browser interface.
 
-First, run the development server:
+## Features
+
+- Register members on 1-month, 3-month, or 1-year plans
+- Generate a QR code for each member pass
+- Check members in by scanning a QR code or entering a member ID
+- Grant access only to active memberships and track check-ins
+- Search and filter the member database by status
+- View, extend, expire, and delete member records
+- Use browser `localStorage` by default, with optional Supabase persistence
+
+## Tech stack
+
+- Next.js 16 (App Router)
+- React 19 and TypeScript
+- Tailwind CSS
+- Supabase
+- `html5-qrcode` for camera scanning
+- `qrcode.react` for member passes
+
+## Requirements
+
+- Node.js 20 or newer
+- npm
+- A Supabase project if shared persistence is required
+
+## Getting started
+
+Install dependencies and start the development server:
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The app runs without Supabase. In that mode, member records are stored in the
+browser that is running the app.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Supabase setup
 
-## Learn More
+Supabase is optional. Configure it when member records need to be shared
+between browsers or devices.
 
-To learn more about Next.js, take a look at the following resources:
+1. Create a Supabase project.
+2. In the project settings, copy the project URL and publishable key.
+3. Create `.env.local` in the project root:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+4. Run [`supabase/schema.sql`](./supabase/schema.sql) in the Supabase SQL
+   editor.
+5. Restart the development server.
 
-## Deploy on Vercel
+The schema creates the `public.members` table and enables the policies used by
+the browser client. Review those policies before exposing the app beyond a
+trusted internal environment.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+When Supabase is configured and contains records, those records are loaded as
+the displayed member list. The app also keeps a local copy for fallback and
+offline continuity.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Available scripts
+
+```bash
+npm run dev       # Start the development server
+npm run build     # Create a production build
+npm run start     # Serve the production build
+npm run lint      # Run ESLint
+```
+
+## Project structure
+
+```text
+app/              Next.js routes and global styles
+components/       Registration, scanner, database, and QR-code UI
+lib/              Member types, membership rules, and persistence helpers
+supabase/         Database schema and access policies
+```
+
+## Deployment
+
+Build the application and serve it with the production server:
+
+```bash
+npm run build
+npm run start
+```
+
+For a hosted deployment, configure the same `NEXT_PUBLIC_SUPABASE_URL` and
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` variables in the hosting provider. If
+camera scanning is enabled, serve the app over HTTPS; browsers generally
+require a secure context before granting camera access.
