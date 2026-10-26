@@ -30,3 +30,7 @@ body {
   height: 100% !important;
   object-fit: cover;
 }
+
+#member-qr-reader.front-camera-preview video {
+  transform: scaleX(-1);
+}

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import type { Member, ScanMessage, ScanResult } from "@/lib/gym-members";
@@ -11,6 +11,7 @@ export default function ScannerTab({ members, scannedIdInput, setScannedIdInput,
   scannedResult: ScanResult | null; setScannedResult: Dispatch<SetStateAction<ScanResult | null>>;
   scanMessage: ScanMessage; setScanMessage: Dispatch<SetStateAction<ScanMessage>>; referenceDate: string;
 }) {
+  const [cameraFacing, setCameraFacing] = useState<"environment" | "user">("environment");
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const lastDecodedTextRef = useRef("");
   const performScanRef = useRef(performScan);
@@ -39,39 +40,48 @@ export default function ScannerTab({ members, scannedIdInput, setScannedIdInput,
         throw new Error("No camera was found on this device.");
       }
 
-      const preferredCamera =
-        cameras.find((camera) => /back|rear|environment/i.test(camera.label)) ??
-        cameras[0];
-
-      await scanner.start(
-        { facingMode: "environment" },
-        {
-          fps: 10,
-          qrbox: (viewfinderWidth, viewfinderHeight) => {
-            const size = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.85);
-            return { width: Math.min(size, 420), height: Math.min(size, 420) };
-          },
+      const cameraPattern =
+        cameraFacing === "environment"
+          ? /back|rear|environment/i
+          : /front|user|facetime/i;
+      const preferredCamera = cameras.find((camera) => cameraPattern.test(camera.label));
+      const scanConfig = {
+        fps: 10,
+        qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+          const size = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.85);
+          return { width: Math.min(size, 420), height: Math.min(size, 420) };
         },
-        handleDecodedText,
-        () => {
-          // Decode failures are expected between successful scans.
+      };
+      const applyPreviewTransform = () => {
+        const video = document.querySelector<HTMLVideoElement>("#member-qr-reader video");
+        if (video) {
+          video.style.transform = cameraFacing === "user" ? "scaleX(-1)" : "none";
         }
-      ).catch(async () => {
+      };
+
+      try {
         await scanner.start(
-          preferredCamera.id,
-          {
-            fps: 10,
-            qrbox: (viewfinderWidth, viewfinderHeight) => {
-              const size = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.85);
-              return { width: Math.min(size, 420), height: Math.min(size, 420) };
-            },
-          },
+          { facingMode: cameraFacing },
+          scanConfig,
           handleDecodedText,
           () => {
             // Decode failures are expected between successful scans.
           }
         );
-      });
+        applyPreviewTransform();
+      } catch (error: unknown) {
+        if (!preferredCamera) throw error;
+
+        await scanner.start(
+          preferredCamera.id,
+          scanConfig,
+          handleDecodedText,
+          () => {
+            // Decode failures are expected between successful scans.
+          }
+        );
+        applyPreviewTransform();
+      }
     };
 
     startScanner()
@@ -98,7 +108,7 @@ export default function ScannerTab({ members, scannedIdInput, setScannedIdInput,
           .finally(() => activeScanner.clear());
       }
     };
-  }, [isCameraActive, setIsCameraActive, setScanMessage, setScannedIdInput]);
+  }, [cameraFacing, isCameraActive, setIsCameraActive, setScanMessage, setScannedIdInput]);
 
   return (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-8 items-start">
@@ -164,17 +174,41 @@ export default function ScannerTab({ members, scannedIdInput, setScannedIdInput,
 
                 <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-4 border-t border-slate-800">
                   <span className="text-xs text-slate-400">Webcam Scanner Feed:</span>
-                  <button
-                    type="button"
-                    onClick={() => setIsCameraActive(!isCameraActive)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                      isCameraActive
-                        ? "bg-rose-500/20 text-rose-400 border border-rose-500/30"
-                        : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                    }`}
-                  >
-                    {isCameraActive ? "Stop Camera" : "Start Live Webcam"}
-                  </button>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setCameraFacing("environment")}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                        cameraFacing === "environment"
+                          ? "bg-cyan-500 text-slate-950"
+                          : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                      }`}
+                    >
+                      Back Camera
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCameraFacing("user")}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                        cameraFacing === "user"
+                          ? "bg-cyan-500 text-slate-950"
+                          : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                      }`}
+                    >
+                      Front Camera
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsCameraActive(!isCameraActive)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                        isCameraActive
+                          ? "bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                          : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                      }`}
+                    >
+                      {isCameraActive ? "Stop Camera" : "Start Live Webcam"}
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -182,7 +216,12 @@ export default function ScannerTab({ members, scannedIdInput, setScannedIdInput,
               {isCameraActive && (
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 sm:p-4 overflow-hidden text-center">
                   <div className="relative aspect-[4/3] bg-slate-950 rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center">
-                    <div id="member-qr-reader" className="w-full h-full min-h-72 sm:min-h-[28rem]" />
+                    <div
+                      id="member-qr-reader"
+                      className={`w-full h-full min-h-72 sm:min-h-[28rem] ${
+                        cameraFacing === "user" ? "front-camera-preview" : ""
+                      }`}
+                    />
                   </div>
                   <p className="text-[11px] text-slate-500 mt-2">
                     Position the member&apos;s QR code in front of the lens.
