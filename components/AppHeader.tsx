@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
 import Image from "next/image";
-import { DatabaseIcon, ScanIcon, UserPlusIcon } from "@/components/icons";
+import { AttendanceIcon, DatabaseIcon, ScanIcon, UserPlusIcon } from "@/components/icons";
 
 export default function AppHeader({ activeTab, setActiveTab, activeCount, expiredCount }: {
   activeTab: string; setActiveTab: Dispatch<SetStateAction<string>>; activeCount: number; expiredCount: number;
@@ -30,7 +30,7 @@ export default function AppHeader({ activeTab, setActiveTab, activeCount, expire
           </div>
 
           {/* Navigation Tabs */}
-          <nav className="grid grid-cols-3 items-stretch w-full md:w-auto md:flex bg-white/90 p-1 rounded-xl border border-[#e4e6f0]/80 shadow-inner">
+          <nav className="grid grid-cols-4 items-stretch w-full md:w-auto md:flex bg-white/90 p-1 rounded-xl border border-[#e4e6f0]/80 shadow-inner">
             <button
               onClick={() => setActiveTab("register")}
               className={`flex items-center justify-center gap-1 md:gap-2 px-1.5 sm:px-3 md:px-4 py-2 rounded-lg text-[10px] sm:text-xs md:text-sm leading-tight font-medium transition-all duration-200 ${
@@ -41,6 +41,18 @@ export default function AppHeader({ activeTab, setActiveTab, activeCount, expire
             >
               <UserPlusIcon />
               <span>Customer Registration</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("attendance")}
+              className={`flex items-center justify-center gap-1 md:gap-2 px-1.5 sm:px-3 md:px-4 py-2 rounded-lg text-[10px] sm:text-xs md:text-sm leading-tight font-medium transition-all duration-200 ${
+                activeTab === "attendance"
+                  ? "bg-[#5d70c7] text-[#151d3d] font-bold shadow-md shadow-[#5d70c7]/20"
+                  : "text-[#5d70c7] hover:text-[#151d3d] hover:bg-white"
+              }`}
+            >
+              <AttendanceIcon />
+              <span>Attendance</span>
             </button>
 
             <button

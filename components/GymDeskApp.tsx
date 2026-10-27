@@ -9,6 +9,7 @@ import {
   normalizePhilippinePhone,
   type Member,
   type MemberFormData,
+  type AttendanceRecord,
   type ScanMessage,
   type ScanResult,
 } from "@/lib/gym-members";
@@ -16,6 +17,8 @@ import {
   deleteMemberFromDatabase,
   fetchMembers,
   recordMembershipRenewal,
+  fetchAttendance,
+  recordAttendance,
   upsertMember,
 } from "@/lib/member-repository";
 
@@ -25,12 +28,14 @@ import DatabaseTab from "@/components/DatabaseTab";
 import QrModal from "@/components/QrModal";
 import RegistrationTab from "@/components/RegistrationTab";
 import ScannerTab from "@/components/ScannerTab";
+import AttendanceTab from "@/components/AttendanceTab";
 
 export default function App() {
   // --- STATE ---
   const [members, setMembers] = useState<Member[]>([]);
   const [referenceDate, setReferenceDate] = useState(DEFAULT_REFERENCE_DATE);
-  const [activeTab, setActiveTab] = useState("register"); // 'register' | 'scanner' | 'database'
+  const [activeTab, setActiveTab] = useState("register"); // 'register' | 'scanner' | 'database' | 'attendance'
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   
   // Registration Form State
   const [formData, setFormData] = useState<MemberFormData>({
@@ -81,6 +86,28 @@ export default function App() {
       })
       .catch((error: unknown) => {
         console.error("Unable to load members from Supabase:", error);
+      });
+
+    const storedAttendance = localStorage.getItem("gym_attendance_v1");
+    if (storedAttendance) {
+      try {
+        queueMicrotask(() => setAttendance(JSON.parse(storedAttendance) as AttendanceRecord[]));
+      } catch (error) {
+        console.error("Unable to load stored attendance:", error);
+      }
+    } else {
+      localStorage.setItem("gym_attendance_v1", JSON.stringify([]));
+    }
+
+    fetchAttendance()
+      .then((remoteAttendance) => {
+        if (remoteAttendance && remoteAttendance.length > 0) {
+          setAttendance(remoteAttendance);
+          localStorage.setItem("gym_attendance_v1", JSON.stringify(remoteAttendance));
+        }
+      })
+      .catch((error: unknown) => {
+        console.error("Unable to load attendance from Supabase:", error);
       });
   }, []);
 
@@ -165,6 +192,22 @@ export default function App() {
         saveMembersToStore(updated);
         const updatedMember = updated.find((member) => member.id === found.id);
         if (updatedMember) syncMember(updatedMember);
+
+        const checkedInAt = new Date();
+        const attendanceRecord: AttendanceRecord = {
+          id: `${found.id}-${checkedInAt.getTime()}-${Math.random().toString(36).slice(2, 8)}`,
+          memberId: found.id,
+          memberName: found.name,
+          activity: found.activity,
+          date: checkedInAt.toISOString().split("T")[0],
+          checkedInAt: checkedInAt.toISOString(),
+        };
+        const updatedAttendance = [attendanceRecord, ...attendance];
+        setAttendance(updatedAttendance);
+        localStorage.setItem("gym_attendance_v1", JSON.stringify(updatedAttendance));
+        recordAttendance(attendanceRecord).catch((error: unknown) => {
+          console.error("Unable to synchronize attendance with Supabase:", error);
+        });
       }
 
       setScannedResult({ ...found, isJustCheckedIn: true });
@@ -262,6 +305,7 @@ export default function App() {
         {activeTab === "register" && <RegistrationTab formData={formData} setFormData={setFormData} handleRegisterSubmit={handleRegisterSubmit} lastRegisteredMember={lastRegisteredMember} handleTestScanMember={handleTestScanMember} referenceDate={referenceDate} />}
         {activeTab === "scanner" && <ScannerTab members={members} scannedIdInput={scannedIdInput} setScannedIdInput={setScannedIdInput} performScan={performScan} isCameraActive={isCameraActive} setIsCameraActive={setIsCameraActive} scannedResult={scannedResult} setScannedResult={setScannedResult} scanMessage={scanMessage} setScanMessage={setScanMessage} referenceDate={referenceDate} />}
         {activeTab === "database" && <DatabaseTab filteredMembers={filteredMembers} searchQuery={searchQuery} setSearchQuery={setSearchQuery} statusFilter={statusFilter} setStatusFilter={setStatusFilter} setSelectedQrModalMember={setSelectedQrModalMember} handleToggleExpiry={handleToggleExpiry} handleRenewMember={handleRenewMember} handleTestScanMember={handleTestScanMember} handleDeleteMember={handleDeleteMember} referenceDate={referenceDate} />}
+        {activeTab === "attendance" && <AttendanceTab attendance={attendance} referenceDate={referenceDate} />}
       </main>
       <QrModal member={selectedQrModalMember} setMember={setSelectedQrModalMember} handleTestScanMember={handleTestScanMember} />
       <AppFooter />

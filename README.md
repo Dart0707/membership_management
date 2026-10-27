@@ -11,6 +11,7 @@ member record management from a single browser interface.
 - Generate a QR code for each member pass
 - Check members in by scanning a QR code or entering a member ID
 - Grant access only to active memberships and track check-ins
+- Review daily attendance by date and activity
 - Search and filter the member database by status
 - View, extend, expire, and delete member records
 - Use browser `localStorage` by default, with optional Supabase persistence
@@ -62,7 +63,11 @@ between browsers or devices.
    editor.
 5. Restart the development server.
 
-The schema creates the `public.members` table and enables the policies used by
+If the attendance table has not been added yet, the app continues using its
+local attendance history. Run the updated schema to sync attendance between
+browsers and devices.
+
+The schema creates the `public.members` and `public.attendance` tables and enables the policies used by
 the browser client. Review those policies before exposing the app beyond a
 trusted internal environment.
 

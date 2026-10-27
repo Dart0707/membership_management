@@ -1,6 +1,7 @@
 import {
   CircleCheck,
   CircleX,
+  CalendarCheck,
   Database,
   Download,
   Printer,
@@ -16,6 +17,8 @@ export const UserPlusIcon = () => <UserPlus className="w-5 h-5" />;
 export const ScanIcon = () => <Scan className="w-5 h-5" />;
 
 export const DatabaseIcon = () => <Database className="w-5 h-5" />;
+
+export const AttendanceIcon = () => <CalendarCheck className="w-5 h-5" />;
 
 export const CheckCircleIcon = () => <CircleCheck className="w-6 h-6 text-[#6f80d2]" />;
 

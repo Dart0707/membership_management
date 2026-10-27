@@ -19,6 +19,15 @@ export type ScanMessage =
   | { type: "SUCCESS" | "EXPIRED" | "ERROR"; text: string }
   | null;
 
+export type AttendanceRecord = {
+  id: string;
+  memberId: string;
+  memberName: string;
+  activity: Activity;
+  date: string;
+  checkedInAt: string;
+};
+
 export const DEFAULT_REFERENCE_DATE = "1970-01-01";
 export const ACTIVITIES: Activity[] = ["Gym", "Boxing", "Muay Thai", "Brazilian Jiu Jitsu"];
 

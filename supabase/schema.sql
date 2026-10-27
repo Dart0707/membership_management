@@ -38,3 +38,24 @@ create policy "Allow public member deletes"
   on public.members for delete
   to anon
   using (true);
+
+create table if not exists public.attendance (
+  id text primary key,
+  member_id text not null references public.members(id) on delete cascade,
+  member_name text not null,
+  activity text not null,
+  attendance_date date not null,
+  checked_in_at timestamptz not null default now()
+);
+
+alter table public.attendance enable row level security;
+
+create policy "Allow public attendance reads"
+  on public.attendance for select
+  to anon
+  using (true);
+
+create policy "Allow public attendance inserts"
+  on public.attendance for insert
+  to anon
+  with check (true);
