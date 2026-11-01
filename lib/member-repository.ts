@@ -89,6 +89,23 @@ export async function fetchMembers() {
   return (data as MemberRow[]).map(toMember);
 }
 
+export async function fetchMemberByLogin(phone: string, username: string) {
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from("members")
+    .select("id,name,email,phone,plan,activity,is_student,price,registration_date,expiry_date,check_ins")
+    .eq("phone", phone);
+
+  if (error) throw new Error(`Unable to verify member login: ${error.message}`);
+
+  const normalizedUsername = username.trim().toLocaleLowerCase();
+  const member = (data as MemberRow[]).find(
+    (row) => row.name.trim().toLocaleLowerCase() === normalizedUsername
+  );
+  return member ? toMember(member) : null;
+}
+
 export async function fetchAttendance() {
   if (!supabase) return null;
 
