@@ -108,6 +108,9 @@ export default function MemberLogin() {
                 />
               </label>
               {errorMessage && <p role="alert" className="rounded-xl bg-[#fae5e8] px-4 py-3 text-sm font-medium text-[#b63d4d]">{errorMessage}</p>}
+              <a href="/member-registration" className="block underline text-sm font-semibold text-[#5d70c7] transition hover:underline">
+                Not registered yet? Sign up here.
+              </a>
               <button
                 type="submit"
                 disabled={isLoading}

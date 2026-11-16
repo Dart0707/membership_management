@@ -77,7 +77,7 @@ export default function DatabaseTab({ filteredMembers, searchQuery, setSearchQue
                           <td className="p-3.5 font-mono font-bold text-[#151d3d]">{member.id}</td>
                           <td className="p-3.5">
                             <div className="font-semibold text-[#151d3d]">{member.name}</div>
-                            <div className="text-[11px] text-[#8795db]">{member.email}</div>
+                            <div className="text-[11px] text-[#8795db]">{member.phone}</div>
                           </td>
                           <td className="p-3.5">
                             <span className="px-2 py-0.5 rounded bg-[#e4e6f0] text-[#6f80d2] font-semibold text-[11px]">
