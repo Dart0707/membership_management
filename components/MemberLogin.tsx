@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { fetchMemberByLogin } from "@/lib/member-repository";
-import { isMemberActive, normalizePhilippinePhone, type Member } from "@/lib/gym-members";
+import { getGymDate, isMemberActive, normalizePhilippinePhone, type Member } from "@/lib/gym-members";
 import MemberQrCode from "@/components/MemberQrCode";
 
 const localMembersKey = "gym_members_v1";
@@ -54,7 +54,7 @@ export default function MemberLogin() {
         setErrorMessage("We could not find a member with that name and phone number.");
         return;
       }
-      setToday(new Date().toISOString().split("T")[0]);
+      setToday(getGymDate());
       setMember(foundMember);
     } catch (error) {
       console.error("Unable to log in member:", error);
@@ -148,8 +148,8 @@ export default function MemberLogin() {
               ))}
             </div>
 
-            <div className={`mt-4 rounded-2xl px-4 py-3 text-center text-sm font-bold ${isMemberActive(member.expiryDate, today) ? "bg-[#e4f5ed] text-[#28734c]" : "bg-[#fae5e8] text-[#b63d4d]"}`}>
-              {isMemberActive(member.expiryDate, today) ? "Membership active" : "Membership expired"}
+            <div className={`mt-4 rounded-2xl px-4 py-3 text-center text-sm font-bold ${isMemberActive(member.expiryDate, today, member.remainingPasses, member.lastPassDate) ? "bg-[#e4f5ed] text-[#28734c]" : "bg-[#fae5e8] text-[#b63d4d]"}`}>
+              {isMemberActive(member.expiryDate, today, member.remainingPasses, member.lastPassDate) ? "Membership active" : "Membership expired"}
             </div>
             <button onClick={() => setMember(null)} className="mt-6 w-full rounded-xl border border-[#c4c9df] bg-white px-4 py-3 text-sm font-bold text-[#5d70c7] transition hover:bg-[#f7f8fc]">
               Log out

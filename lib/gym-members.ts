@@ -26,6 +26,7 @@ export type Member = {
   expiryDate: string;
   checkIns: number;
   remainingPasses: number | null;
+  lastPassDate?: string | null;
 };
 
 export type MemberFormData = Pick<
@@ -125,12 +126,13 @@ export function getDaysRemaining(
 export function isMemberActive(
   expiryDateStr: string,
   referenceDate = DEFAULT_REFERENCE_DATE,
-  remainingPasses?: number | null
+  remainingPasses?: number | null,
+  lastPassDate?: string | null
 ) {
   const dateValid = getDaysRemaining(expiryDateStr, referenceDate) >= 0;
   if (!dateValid) return false;
   if (remainingPasses !== null && remainingPasses !== undefined) {
-    return remainingPasses > 0;
+    return remainingPasses > 0 || lastPassDate === referenceDate;
   }
   return true;
 }
@@ -156,4 +158,13 @@ export function calculateExpiryDate(
     result.setDate(result.getDate() + matchedPlan.durationDays);
   }
   return result.toISOString().split("T")[0];
+}
+export function getGymDate(date = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", {timeZone:"Asia/Manila",year:"numeric",month:"2-digit",day:"2-digit"}).format(date);
+}
+
+export function consumeDailyPass(member: Member, date: string): Member {
+  if (!isMemberActive(member.expiryDate, date, member.remainingPasses, member.lastPassDate)) throw new Error("Membership expired or no passes remaining.");
+  if (member.remainingPasses == null || member.lastPassDate === date) return member;
+  return {...member, remainingPasses: member.remainingPasses - 1, lastPassDate: date, checkIns: member.checkIns + 1};
 }

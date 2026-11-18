@@ -181,7 +181,7 @@ export default function CustomPlanModal({
                 className="w-full bg-white border border-[#e4e6f0] rounded-xl px-3 py-2 text-sm text-[#151d3d]"
               />
               <p className="text-[11px] text-[#8795db] mt-1">
-                Expires in 1 year (360 days) and deducts 1 pass per check-in scan.
+                Expires in 1 year (360 days) and deducts 1 pass per attendance day. Repeat scans on the same day use no extra pass.
               </p>
             </div>
           ) : (

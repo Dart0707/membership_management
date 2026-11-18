@@ -71,7 +71,7 @@ export default function DatabaseTab({ filteredMembers, searchQuery, setSearchQue
                 <tbody className="divide-y divide-[#e4e6f0]/60">
                   {filteredMembers.length > 0 ? (
                     filteredMembers.map((member) => {
-                      const active = isMemberActive(member.expiryDate, referenceDate);
+                      const active = isMemberActive(member.expiryDate, referenceDate, member.remainingPasses, member.lastPassDate);
                       return (
                         <tr key={member.id} className="hover:bg-[#e4e6f0]/40 transition">
                           <td className="p-3.5 font-mono font-bold text-[#151d3d]">{member.id}</td>
@@ -175,7 +175,7 @@ export default function DatabaseTab({ filteredMembers, searchQuery, setSearchQue
                     <span className="font-mono font-bold text-[#6f80d2]">
                       {calculateExpiryDate(
                         renewalPlan,
-                        isMemberActive(renewingMember.expiryDate, referenceDate)
+                        isMemberActive(renewingMember.expiryDate, referenceDate, renewingMember.remainingPasses, renewingMember.lastPassDate)
                           ? renewingMember.expiryDate
                           : referenceDate
                       )}

@@ -143,7 +143,7 @@ export default function ScannerTab({ members, scannedIdInput, setScannedIdInput,
                     <option value="">-- Choose a registered member to simulate scan --</option>
                     {members.map((m) => (
                       <option key={m.id} value={m.id}>
-                        {m.name} ({m.id}) - {isMemberActive(m.expiryDate, referenceDate) ? "Active" : "Expired"}
+                        {m.name} ({m.id}) - {isMemberActive(m.expiryDate, referenceDate, m.remainingPasses, m.lastPassDate) ? "Active" : "Expired"}
                       </option>
                     ))}
                   </select>
@@ -236,7 +236,7 @@ export default function ScannerTab({ members, scannedIdInput, setScannedIdInput,
               {scannedResult ? (
                 <div
                   className={`bg-white border-2 rounded-2xl p-4 sm:p-6 shadow-2xl relative overflow-hidden transition-all duration-300 ${
-                    isMemberActive(scannedResult.expiryDate, referenceDate)
+                    isMemberActive(scannedResult.expiryDate, referenceDate, scannedResult.remainingPasses, scannedResult.lastPassDate)
                       ? "border-[#5d70c7] shadow-[#5d70c7]/10"
                       : "border-[#f26173] shadow-[#f26173]/10"
                   }`}
@@ -244,25 +244,25 @@ export default function ScannerTab({ members, scannedIdInput, setScannedIdInput,
                   {/* Status Banner */}
                   <div
                     className={`py-3 px-4 rounded-xl flex items-center justify-between mb-6 ${
-                      isMemberActive(scannedResult.expiryDate, referenceDate)
+                      isMemberActive(scannedResult.expiryDate, referenceDate, scannedResult.remainingPasses, scannedResult.lastPassDate)
                         ? "bg-[#5d70c7]/10 border border-[#5d70c7]/30 text-[#6f80d2]"
                         : "bg-[#f26173]/10 border border-[#f26173]/30 text-[#f26173]"
                     }`}
                   >
                     <div className="flex items-center space-x-2">
-                      {isMemberActive(scannedResult.expiryDate, referenceDate) ? <CheckCircleIcon /> : <XCircleIcon />}
+                      {isMemberActive(scannedResult.expiryDate, referenceDate, scannedResult.remainingPasses, scannedResult.lastPassDate) ? <CheckCircleIcon /> : <XCircleIcon />}
                       <span className="font-extrabold text-sm tracking-wider uppercase">
-                        {isMemberActive(scannedResult.expiryDate, referenceDate) ? "ACCESS GRANTED" : "ACCESS DENIED"}
+                        {isMemberActive(scannedResult.expiryDate, referenceDate, scannedResult.remainingPasses, scannedResult.lastPassDate) ? "ACCESS GRANTED" : "ACCESS DENIED"}
                       </span>
                     </div>
                     <span
                       className={`text-xs px-2.5 py-0.5 rounded-full font-bold uppercase ${
-                        isMemberActive(scannedResult.expiryDate, referenceDate)
+                        isMemberActive(scannedResult.expiryDate, referenceDate, scannedResult.remainingPasses, scannedResult.lastPassDate)
                           ? "bg-[#5d70c7] text-[#151d3d]"
                           : "bg-[#f26173] text-[#151d3d]"
                       }`}
                     >
-                      {isMemberActive(scannedResult.expiryDate, referenceDate) ? "ACTIVE" : "EXPIRED"}
+                      {isMemberActive(scannedResult.expiryDate, referenceDate, scannedResult.remainingPasses, scannedResult.lastPassDate) ? "ACTIVE" : "EXPIRED"}
                     </span>
                   </div>
 

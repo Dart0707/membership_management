@@ -15,6 +15,7 @@ type MemberRow = {
   expiry_date: string;
   check_ins: number;
   remaining_passes?: number | null;
+  last_pass_date?: string | null;
 };
 
 type MembershipPlanRow = {
@@ -88,6 +89,7 @@ function toMember(row: MemberRow): Member {
     expiryDate: row.expiry_date,
     checkIns: row.check_ins,
     remainingPasses: row.remaining_passes ?? null,
+    lastPassDate: row.last_pass_date ?? null,
   };
 }
 
@@ -106,6 +108,7 @@ function toRow(member: Member): MemberRow {
     expiry_date: member.expiryDate,
     check_ins: member.checkIns,
     remaining_passes: member.remainingPasses,
+    last_pass_date: member.lastPassDate ?? null,
   };
 }
 
@@ -152,7 +155,7 @@ export async function fetchMembers() {
 
   const { data, error } = await supabase
     .from("members")
-    .select("id,name,email,address,phone,plan,activity,is_student,price,registration_date,expiry_date,check_ins,remaining_passes")
+    .select("id,name,email,address,phone,plan,activity,is_student,price,registration_date,expiry_date,check_ins,remaining_passes,last_pass_date")
     .order("registration_date", { ascending: false });
 
   if (error) throw new Error(`Unable to load members from Supabase: ${error.message}`);
@@ -164,7 +167,7 @@ export async function fetchMemberByLogin(phone: string, username: string) {
 
   const { data, error } = await supabase
     .from("members")
-    .select("id,name,email,address,phone,plan,activity,is_student,price,registration_date,expiry_date,check_ins,remaining_passes")
+    .select("id,name,email,address,phone,plan,activity,is_student,price,registration_date,expiry_date,check_ins,remaining_passes,last_pass_date")
     .eq("phone", phone);
 
   if (error) throw new Error(`Unable to verify member login: ${error.message}`);
@@ -239,4 +242,10 @@ export async function deleteMembershipPlan(title: string) {
 
   const { error } = await supabase.from("membership_plans").delete().eq("title", title);
   if (error) throw new Error(`Unable to delete membership plan from Supabase: ${error.message}`);
+}
+export async function checkInPassOncePerDay(memberId: string): Promise<{member: Member; attendance: AttendanceRecord; consumed: boolean} | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc("check_in_pass_once_per_day", { p_member_id: memberId });
+  if (error) throw new Error(`Unable to check in: ${error.message}`);
+  return {member: toMember(data.member as MemberRow), attendance: toAttendanceRecord(data.attendance as AttendanceRow), consumed: data.consumed};
 }

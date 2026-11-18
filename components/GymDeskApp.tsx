@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
+  getGymDate,
+  consumeDailyPass,
   calculateExpiryDate,
   DEFAULT_MEMBERSHIP_PLANS,
   DEFAULT_REFERENCE_DATE,
@@ -16,6 +18,7 @@ import {
   type ScanResult,
 } from "@/lib/gym-members";
 import {
+  checkInPassOncePerDay,
   createMembershipPlan,
   deleteMembershipPlan,
   deleteMemberFromDatabase,
@@ -36,6 +39,7 @@ import ScannerTab from "@/components/ScannerTab";
 import AttendanceTab from "@/components/AttendanceTab";
 
 export default function App() {
+  const scanning = useRef(false);
   // --- STATE ---
   const [members, setMembers] = useState<Member[]>([]);
   const [plans, setPlans] = useState<MembershipPlan[]>(DEFAULT_MEMBERSHIP_PLANS);
@@ -68,7 +72,7 @@ export default function App() {
   // --- INITIALIZE LOCAL STORAGE ---
   useEffect(() => {
     queueMicrotask(() => {
-      setReferenceDate(new Date().toISOString().split("T")[0]);
+      setReferenceDate(getGymDate());
     });
 
     const storedPlans = localStorage.getItem("gym_plans_v1");
@@ -200,7 +204,7 @@ export default function App() {
     if (!selectedPlan || selectedPlan.title === "Daily Pass" || (selectedPlan.activity !== "ALL" && selectedPlan.activity !== formData.activity)) {
       alert("Select an available membership tier for this activity."); return;
     }
-    const todayStr = new Date().toISOString().split("T")[0];
+    const todayStr = getGymDate();
     const expiryStr = calculateExpiryDate(formData.plan, new Date(), plans);
     const newMemberId = `GYM-${Math.floor(1000 + Math.random() * 9000)}-${String.fromCharCode(65 + Math.floor(Math.random() * 26))}`;
 
@@ -245,16 +249,37 @@ export default function App() {
   };
 
   // --- SCANNER LOOKUP ---
-  const performScan = (memberId?: string) => {
+  const performScan = async (memberId?: string) => {
+    if (scanning.current) return;
+    scanning.current = true;
+    try {
+    const scanDate = getGymDate();
+    setReferenceDate(scanDate);
+    const currentMembers = JSON.parse(localStorage.getItem("gym_members_v1") ?? "[]") as Member[];
     const idToSearch = (memberId || scannedIdInput).trim().toUpperCase();
     if (!idToSearch) return;
 
-    const found = members.find(
+    const found = currentMembers.find(
       (m) => m.id.toUpperCase() === idToSearch || idToSearch.includes(m.id.toUpperCase())
     );
 
     if (found) {
-      const active = isMemberActive(found.expiryDate, referenceDate, found.remainingPasses);
+      if (found.remainingPasses != null) {
+        const remote = await checkInPassOncePerDay(found.id);
+        const updatedMember = remote?.member ?? consumeDailyPass(found, scanDate);
+        const existing = JSON.parse(localStorage.getItem("gym_attendance_v1") ?? "[]") as AttendanceRecord[];
+        const alreadyToday = found.lastPassDate === scanDate;
+        const record: AttendanceRecord = remote?.attendance ?? (alreadyToday ? existing.find(r => r.memberId === found.id && r.activity === found.activity && r.date === scanDate) : undefined) ?? {
+          id: `${found.id}-pass-${scanDate}`, memberId: found.id, memberName: found.name, activity: found.activity, date: scanDate, checkedInAt: new Date().toISOString()
+        };
+        saveMembersToStore(currentMembers.map(m => m.id === found.id ? updatedMember : m));
+        const next = [record, ...existing.filter(r => r.id !== record.id)];
+        setAttendance(next); localStorage.setItem("gym_attendance_v1", JSON.stringify(next));
+        setScannedResult({...updatedMember, isJustCheckedIn: true});
+        setScanMessage({type:"SUCCESS", text: (remote ? !remote.consumed : alreadyToday) ? `Already checked in today. No extra pass used (${updatedMember.remainingPasses} left).` : `Check-in successful. One day used (${updatedMember.remainingPasses} passes left).`});
+        return;
+      }
+      const active = isMemberActive(found.expiryDate, scanDate, found.remainingPasses, found.lastPassDate);
       let updatedMemberRef: Member = found;
 
       // Increment check-in count and decrement remaining_passes if active
@@ -282,7 +307,7 @@ export default function App() {
           memberId: found.id,
           memberName: found.name,
           activity: found.activity,
-          date: checkedInAt.toISOString().split("T")[0],
+          date: getGymDate(checkedInAt),
           checkedInAt: checkedInAt.toISOString(),
         };
         const updatedAttendance = [attendanceRecord, ...attendance];
@@ -320,6 +345,10 @@ export default function App() {
         text: `No member found with ID: ${idToSearch}`,
       });
     }
+    } catch (error) {
+      setScannedResult(null);
+      setScanMessage({type:"ERROR",text:error instanceof Error ? error.message : "Unable to check in."});
+    } finally { scanning.current = false; }
   };
 
   const handleToggleExpiry = (memberId: string) => {
@@ -329,7 +358,8 @@ export default function App() {
       const currentlyActive = isMemberActive(
         member.expiryDate,
         referenceDate,
-        member.remainingPasses
+        member.remainingPasses,
+        member.lastPassDate
       );
       const date = new Date();
       date.setDate(date.getDate() + (currentlyActive ? -1 : 30));
@@ -349,12 +379,14 @@ export default function App() {
     const renewalStartDate = isMemberActive(
       member.expiryDate,
       referenceDate,
-      member.remainingPasses
+      member.remainingPasses,
+      member.lastPassDate
     )
       ? member.expiryDate
       : referenceDate;
     const updatedMember: Member = {
       ...member,
+      lastPassDate: null,
       plan,
       price: getPlanPrice(
         member.activity ?? "Gym",
@@ -404,7 +436,8 @@ export default function App() {
       const active = isMemberActive(
         member.expiryDate,
         referenceDate,
-        member.remainingPasses
+        member.remainingPasses,
+        member.lastPassDate
       );
       if (statusFilter === "ACTIVE") return matchesSearch && active;
       if (statusFilter === "EXPIRED") return matchesSearch && !active;
@@ -413,7 +446,7 @@ export default function App() {
   }, [members, referenceDate, searchQuery, statusFilter]);
 
   const activeCount = members.filter((member) =>
-    isMemberActive(member.expiryDate, referenceDate, member.remainingPasses)
+    isMemberActive(member.expiryDate, referenceDate, member.remainingPasses, member.lastPassDate)
   ).length;
   const expiredCount = members.length - activeCount;
 
