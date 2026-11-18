@@ -46,7 +46,7 @@ export default function App() {
   // Registration Form State
   const [formData, setFormData] = useState<MemberFormData>({
     name: "",
-    email: "",
+    address: "",
     phone: "",
     plan: "1 Month",
     activity: "Gym",
@@ -175,7 +175,7 @@ export default function App() {
 
     // 3. Reset the form if they were currently viewing the deleted plan
     if (formData.plan === title) {
-      const fallback = updatedPlans.find((p) => p.activity === formData.activity || p.activity === "ALL");
+      const fallback = updatedPlans.find((p) => p.title !== "Daily Pass" && (p.activity === formData.activity || p.activity === "ALL"));
       setFormData({ ...formData, plan: fallback?.title || "1 Month" });
     }
 
@@ -189,7 +189,7 @@ export default function App() {
   // --- REGISTER NEW MEMBER ---
   const handleRegisterSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!formData.name || !formData.email) return;
+    if (!formData.name.trim() || !formData.address.trim()) return;
     const phone = normalizePhilippinePhone(formData.phone);
     if (!phone) {
       alert("Enter a valid Philippine phone number starting with 09, such as 09171234567.");
@@ -197,14 +197,17 @@ export default function App() {
     }
 
     const selectedPlan = plans.find((p) => p.title === formData.plan);
+    if (!selectedPlan || selectedPlan.title === "Daily Pass" || (selectedPlan.activity !== "ALL" && selectedPlan.activity !== formData.activity)) {
+      alert("Select an available membership tier for this activity."); return;
+    }
     const todayStr = new Date().toISOString().split("T")[0];
     const expiryStr = calculateExpiryDate(formData.plan, new Date(), plans);
     const newMemberId = `GYM-${Math.floor(1000 + Math.random() * 9000)}-${String.fromCharCode(65 + Math.floor(Math.random() * 26))}`;
 
     const newMember: Member = {
       id: newMemberId,
-      name: formData.name,
-      email: formData.email,
+      name: formData.name.trim(),
+      address: formData.address.trim(),
       phone,
       plan: formData.plan,
       activity: formData.activity,
@@ -217,15 +220,16 @@ export default function App() {
         selectedPlan?.promoType === "daily_pass" ? (selectedPlan.passCount ?? 1) : null,
     };
 
+    try { await upsertMember(newMember); }
+    catch (error) { alert(error instanceof Error ? error.message : "Unable to save member."); return; }
     const updated = [newMember, ...members];
     saveMembersToStore(updated);
-    syncMember(newMember);
     setLastRegisteredMember(newMember);
 
     // Reset Form
     setFormData({
       name: "",
-      email: "",
+      address: "",
       phone: "",
       plan: "1 Month",
       activity: "Gym",
@@ -337,6 +341,7 @@ export default function App() {
   };
 
   const handleRenewMember = async (memberId: string, plan: string) => {
+    if (plan === "Daily Pass") return;
     const member = members.find((item) => item.id === memberId);
     if (!member) return;
 
@@ -394,7 +399,7 @@ export default function App() {
       const query = searchQuery.toLowerCase();
       const matchesSearch =
         member.name.toLowerCase().includes(query) ||
-        member.email.toLowerCase().includes(query) ||
+        (member.address ?? "").toLowerCase().includes(query) ||
         member.id.toLowerCase().includes(query);
       const active = isMemberActive(
         member.expiryDate,

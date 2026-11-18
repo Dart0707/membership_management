@@ -4,7 +4,8 @@ import type { AttendanceRecord, Member, MembershipPlan } from "@/lib/gym-members
 type MemberRow = {
   id: string;
   name: string;
-  email: string;
+  address: string;
+  email?: string;
   phone: string;
   plan: string;
   activity?: Member["activity"];
@@ -76,6 +77,7 @@ function toMember(row: MemberRow): Member {
   return {
     id: row.id,
     name: row.name,
+    address: row.address ?? "",
     email: row.email,
     phone: row.phone,
     plan: row.plan,
@@ -93,7 +95,8 @@ function toRow(member: Member): MemberRow {
   return {
     id: member.id,
     name: member.name,
-    email: member.email,
+    address: member.address ?? "",
+    ...(member.email !== undefined ? { email: member.email } : {}),
     phone: member.phone,
     plan: member.plan,
     activity: member.activity,
@@ -149,7 +152,7 @@ export async function fetchMembers() {
 
   const { data, error } = await supabase
     .from("members")
-    .select("id,name,email,phone,plan,activity,is_student,price,registration_date,expiry_date,check_ins,remaining_passes")
+    .select("id,name,email,address,phone,plan,activity,is_student,price,registration_date,expiry_date,check_ins,remaining_passes")
     .order("registration_date", { ascending: false });
 
   if (error) throw new Error(`Unable to load members from Supabase: ${error.message}`);
@@ -161,7 +164,7 @@ export async function fetchMemberByLogin(phone: string, username: string) {
 
   const { data, error } = await supabase
     .from("members")
-    .select("id,name,email,phone,plan,activity,is_student,price,registration_date,expiry_date,check_ins,remaining_passes")
+    .select("id,name,email,address,phone,plan,activity,is_student,price,registration_date,expiry_date,check_ins,remaining_passes")
     .eq("phone", phone);
 
   if (error) throw new Error(`Unable to verify member login: ${error.message}`);

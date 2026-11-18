@@ -32,7 +32,7 @@ export default function RegistrationTab({
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
 
   const activityPlans = plans.filter(
-    (p) => p.activity === "ALL" || p.activity === formData.activity
+    (p) => p.title !== "Daily Pass" && (p.activity === "ALL" || p.activity === formData.activity)
   );
   const selectedPlan =
     activityPlans.find((p) => p.title === formData.plan) || activityPlans[0];
@@ -81,14 +81,14 @@ export default function RegistrationTab({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-[#151d3d] mb-1">
-                Email Address <span className="text-[#6f80d2]">*</span>
+                Home Address <span className="text-[#6f80d2]">*</span>
               </label>
               <input
-                type="email"
+                type="text"
                 required
-                placeholder="joshua.sales@example.com"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="House no., street, barangay, city"
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                 className="w-full bg-white border border-[#e4e6f0] rounded-xl px-4 py-2.5 text-[#151d3d] placeholder-[#8795db] focus:outline-none focus:border-[#5d70c7] focus:ring-1 focus:ring-[#5d70c7] transition"
               />
             </div>
@@ -260,7 +260,7 @@ export default function RegistrationTab({
             </div>
 
             <h3 className="text-xl font-extrabold text-[#151d3d]">{lastRegisteredMember.name}</h3>
-            <p className="text-xs text-[#5d70c7] mb-3">{lastRegisteredMember.email}</p>
+            <p className="text-xs text-[#5d70c7] mb-3">{lastRegisteredMember.address}</p>
 
             <div className="grid grid-cols-2 gap-2 text-left bg-white p-3 rounded-xl border border-[#e4e6f0] text-xs mb-5">
               <div>

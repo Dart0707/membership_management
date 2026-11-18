@@ -15,7 +15,8 @@ export type MembershipPlan = {
 export type Member = {
   id: string;
   name: string;
-  email: string;
+  address: string;
+  email?: string; // Historical email is preserved, but no longer collected.
   phone: string;
   plan: string; // Foreign Key referencing MembershipPlan.title
   activity: Activity;
@@ -29,7 +30,7 @@ export type Member = {
 
 export type MemberFormData = Pick<
   Member,
-  "name" | "email" | "phone" | "plan" | "activity" | "isStudent"
+  "name" | "address" | "phone" | "plan" | "activity" | "isStudent"
 >;
 export type ScanResult = Member & { isJustCheckedIn: boolean };
 export type ScanMessage =

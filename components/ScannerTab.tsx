@@ -276,7 +276,7 @@ export default function ScannerTab({ members, scannedIdInput, setScannedIdInput,
                     </div>
                     <div>
                       <h3 className="text-xl sm:text-2xl font-black text-[#151d3d] break-words">{scannedResult.name}</h3>
-                      <p className="text-xs text-[#5d70c7]">{scannedResult.email}</p>
+                      <p className="text-xs text-[#5d70c7]">{scannedResult.address}</p>
                       <p className="text-xs text-[#5d70c7] mt-0.5">{scannedResult.phone}</p>
                     </div>
                   </div>

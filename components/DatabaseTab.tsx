@@ -14,7 +14,7 @@ export default function DatabaseTab({ filteredMembers, searchQuery, setSearchQue
 
   const openRenewal = (member: Member) => {
     setRenewingMember(member);
-    setRenewalPlan(member.plan === "Daily Pass" ? "1 Month" : member.plan);
+    setRenewalPlan("1 Month");
   };
 
   return (
@@ -36,7 +36,7 @@ export default function DatabaseTab({ filteredMembers, searchQuery, setSearchQue
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 <input
                   type="text"
-                  placeholder="Search by name, email, or ID..."
+                  placeholder="Search by name, address, or ID..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="bg-white border border-[#e4e6f0] rounded-xl px-3.5 py-2 text-xs text-[#151d3d] placeholder-[#8795db] focus:outline-none focus:border-[#5d70c7] w-full sm:w-64"
@@ -168,7 +168,6 @@ export default function DatabaseTab({ filteredMembers, searchQuery, setSearchQue
                     onChange={(event) => setRenewalPlan(event.target.value)}
                     className="mt-2 w-full rounded-xl border border-[#e4e6f0] bg-white px-3 py-2.5 text-sm text-[#151d3d] focus:outline-none focus:border-[#5d70c7]"
                   >
-                    <option value="Daily Pass">Daily Pass - Php200</option>
                     <option value="1 Month">1 Month - Php1000</option>
                   </select>
                   <p className="mt-3 rounded-xl border border-[#e4e6f0] bg-white px-3 py-2 text-xs text-[#5d70c7]">
