@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import type { AttendanceRecord, Member } from "@/lib/gym-members";
+import type { AttendanceRecord, Member, MembershipPlan } from "@/lib/gym-members";
 
 type MemberRow = {
   id: string;
@@ -13,6 +13,19 @@ type MemberRow = {
   registration_date: string;
   expiry_date: string;
   check_ins: number;
+  remaining_passes?: number | null;
+};
+
+type MembershipPlanRow = {
+  title: string;
+  description: string;
+  activity: MembershipPlan["activity"];
+  promo_type: "daily_pass" | "time_based";
+  pass_count: number | null;
+  duration_days: number;
+  price: number;
+  student_price: number | null;
+  is_custom: boolean;
 };
 
 export type MembershipRenewal = {
@@ -45,6 +58,20 @@ function toAttendanceRecord(row: AttendanceRow): AttendanceRecord {
   };
 }
 
+function toMembershipPlan(row: MembershipPlanRow): MembershipPlan {
+  return {
+    title: row.title,
+    description: row.description,
+    activity: row.activity,
+    promoType: row.promo_type,
+    passCount: row.pass_count,
+    durationDays: Number(row.duration_days),
+    price: Number(row.price),
+    studentPrice: row.student_price !== null ? Number(row.student_price) : null,
+    isCustom: row.is_custom,
+  };
+}
+
 function toMember(row: MemberRow): Member {
   return {
     id: row.id,
@@ -54,10 +81,11 @@ function toMember(row: MemberRow): Member {
     plan: row.plan,
     activity: row.activity ?? "Gym",
     isStudent: row.is_student ?? false,
-    price: row.price ?? 0,
+    price: Number(row.price ?? 0),
     registrationDate: row.registration_date,
     expiryDate: row.expiry_date,
     checkIns: row.check_ins,
+    remainingPasses: row.remaining_passes ?? null,
   };
 }
 
@@ -74,7 +102,46 @@ function toRow(member: Member): MemberRow {
     registration_date: member.registrationDate,
     expiry_date: member.expiryDate,
     check_ins: member.checkIns,
+    remaining_passes: member.remainingPasses,
   };
+}
+
+export async function fetchMembershipPlans(): Promise<MembershipPlan[] | null> {
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from("membership_plans")
+    .select("title,description,activity,promo_type,pass_count,duration_days,price,student_price,is_custom")
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    if (error.code === "PGRST205") return null;
+    throw new Error(`Unable to load membership plans: ${error.message}`);
+  }
+  return (data as MembershipPlanRow[]).map(toMembershipPlan);
+}
+
+export async function createMembershipPlan(plan: MembershipPlan): Promise<MembershipPlan> {
+  if (!supabase) return plan;
+
+  const { data, error } = await supabase
+    .from("membership_plans")
+    .insert({
+      title: plan.title,
+      description: plan.description,
+      activity: plan.activity,
+      promo_type: plan.promoType,
+      pass_count: plan.passCount,
+      duration_days: plan.durationDays,
+      price: plan.price,
+      student_price: plan.studentPrice,
+      is_custom: plan.isCustom,
+    })
+    .select()
+    .single();
+
+  if (error) throw new Error(`Unable to save custom plan to Supabase: ${error.message}`);
+  return toMembershipPlan(data as MembershipPlanRow);
 }
 
 export async function fetchMembers() {
@@ -82,7 +149,7 @@ export async function fetchMembers() {
 
   const { data, error } = await supabase
     .from("members")
-    .select("id,name,email,phone,plan,activity,is_student,price,registration_date,expiry_date,check_ins")
+    .select("id,name,email,phone,plan,activity,is_student,price,registration_date,expiry_date,check_ins,remaining_passes")
     .order("registration_date", { ascending: false });
 
   if (error) throw new Error(`Unable to load members from Supabase: ${error.message}`);
@@ -94,7 +161,7 @@ export async function fetchMemberByLogin(phone: string, username: string) {
 
   const { data, error } = await supabase
     .from("members")
-    .select("id,name,email,phone,plan,activity,is_student,price,registration_date,expiry_date,check_ins")
+    .select("id,name,email,phone,plan,activity,is_student,price,registration_date,expiry_date,check_ins,remaining_passes")
     .eq("phone", phone);
 
   if (error) throw new Error(`Unable to verify member login: ${error.message}`);
@@ -115,8 +182,6 @@ export async function fetchAttendance() {
     .order("checked_in_at", { ascending: false });
 
   if (error) {
-    // Attendance was added after the original schema. Keep local-only mode working
-    // until the optional Supabase migration has been run.
     if (error.code === "PGRST205") return null;
     throw new Error(`Unable to load attendance from Supabase: ${error.message}`);
   }
@@ -164,4 +229,11 @@ export async function deleteMemberFromDatabase(memberId: string) {
 
   const { error } = await supabase.from("members").delete().eq("id", memberId);
   if (error) throw new Error(`Unable to delete member from Supabase: ${error.message}`);
+}
+
+export async function deleteMembershipPlan(title: string) {
+  if (!supabase) return;
+
+  const { error } = await supabase.from("membership_plans").delete().eq("title", title);
+  if (error) throw new Error(`Unable to delete membership plan from Supabase: ${error.message}`);
 }

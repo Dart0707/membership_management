@@ -3,19 +3,24 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
   calculateExpiryDate,
+  DEFAULT_MEMBERSHIP_PLANS,
   DEFAULT_REFERENCE_DATE,
   getPlanPrice,
   isMemberActive,
   normalizePhilippinePhone,
   type Member,
   type MemberFormData,
+  type MembershipPlan,
   type AttendanceRecord,
   type ScanMessage,
   type ScanResult,
 } from "@/lib/gym-members";
 import {
+  createMembershipPlan,
+  deleteMembershipPlan,
   deleteMemberFromDatabase,
   fetchMembers,
+  fetchMembershipPlans,
   recordMembershipRenewal,
   fetchAttendance,
   recordAttendance,
@@ -33,10 +38,11 @@ import AttendanceTab from "@/components/AttendanceTab";
 export default function App() {
   // --- STATE ---
   const [members, setMembers] = useState<Member[]>([]);
+  const [plans, setPlans] = useState<MembershipPlan[]>(DEFAULT_MEMBERSHIP_PLANS);
   const [referenceDate, setReferenceDate] = useState(DEFAULT_REFERENCE_DATE);
   const [activeTab, setActiveTab] = useState("register"); // 'register' | 'scanner' | 'database' | 'attendance'
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
-  
+
   // Registration Form State
   const [formData, setFormData] = useState<MemberFormData>({
     name: "",
@@ -64,6 +70,28 @@ export default function App() {
     queueMicrotask(() => {
       setReferenceDate(new Date().toISOString().split("T")[0]);
     });
+
+    const storedPlans = localStorage.getItem("gym_plans_v1");
+    if (storedPlans) {
+      try {
+        queueMicrotask(() => setPlans(JSON.parse(storedPlans) as MembershipPlan[]));
+      } catch (error) {
+        console.error("Unable to load stored gym plans:", error);
+      }
+    } else {
+      localStorage.setItem("gym_plans_v1", JSON.stringify(DEFAULT_MEMBERSHIP_PLANS));
+    }
+
+    fetchMembershipPlans()
+      .then((remotePlans) => {
+        if (remotePlans && remotePlans.length > 0) {
+          setPlans(remotePlans);
+          localStorage.setItem("gym_plans_v1", JSON.stringify(remotePlans));
+        }
+      })
+      .catch((error: unknown) => {
+        console.error("Unable to load plans from Supabase:", error);
+      });
 
     const stored = localStorage.getItem("gym_members_v1");
     if (stored) {
@@ -123,6 +151,41 @@ export default function App() {
     });
   };
 
+  const handleAddCustomPlan = (newPlan: MembershipPlan) => {
+    const updatedPlans = [...plans, newPlan];
+    setPlans(updatedPlans);
+    localStorage.setItem("gym_plans_v1", JSON.stringify(updatedPlans));
+    createMembershipPlan(newPlan).catch((error: unknown) => {
+      console.error("Unable to save custom plan to Supabase:", error);
+    });
+  };
+
+  const handleDeleteCustomPlan = (title: string) => {
+    // 1. Safety check: prevent deleting if members are currently assigned to it
+    const isPlanInUse = members.some((m) => m.plan === title);
+    if (isPlanInUse) {
+      alert(`Cannot delete "${title}" because there are gym members currently using it. Please reassign them first.`);
+      return;
+    }
+
+    // 2. Remove from local state & storage
+    const updatedPlans = plans.filter((p) => p.title !== title);
+    setPlans(updatedPlans);
+    localStorage.setItem("gym_plans_v1", JSON.stringify(updatedPlans));
+
+    // 3. Reset the form if they were currently viewing the deleted plan
+    if (formData.plan === title) {
+      const fallback = updatedPlans.find((p) => p.activity === formData.activity || p.activity === "ALL");
+      setFormData({ ...formData, plan: fallback?.title || "1 Month" });
+    }
+
+    // 4. Delete from Supabase in the background
+    deleteMembershipPlan(title).catch((error: unknown) => {
+      console.error("Unable to delete custom plan from Supabase:", error);
+      alert("Failed to delete the plan from the database.");
+    });
+  };
+
   // --- REGISTER NEW MEMBER ---
   const handleRegisterSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -133,11 +196,12 @@ export default function App() {
       return;
     }
 
+    const selectedPlan = plans.find((p) => p.title === formData.plan);
     const todayStr = new Date().toISOString().split("T")[0];
-    const expiryStr = calculateExpiryDate(formData.plan, new Date());
+    const expiryStr = calculateExpiryDate(formData.plan, new Date(), plans);
     const newMemberId = `GYM-${Math.floor(1000 + Math.random() * 9000)}-${String.fromCharCode(65 + Math.floor(Math.random() * 26))}`;
 
-    const newMember = {
+    const newMember: Member = {
       id: newMemberId,
       name: formData.name,
       email: formData.email,
@@ -145,10 +209,12 @@ export default function App() {
       plan: formData.plan,
       activity: formData.activity,
       isStudent: formData.isStudent,
-      price: getPlanPrice(formData.activity, formData.plan, formData.isStudent),
+      price: getPlanPrice(formData.activity, formData.plan, formData.isStudent, plans),
       registrationDate: todayStr,
       expiryDate: expiryStr,
       checkIns: 0,
+      remainingPasses:
+        selectedPlan?.promoType === "daily_pass" ? (selectedPlan.passCount ?? 1) : null,
     };
 
     const updated = [newMember, ...members];
@@ -179,19 +245,32 @@ export default function App() {
     const idToSearch = (memberId || scannedIdInput).trim().toUpperCase();
     if (!idToSearch) return;
 
-    const found = members.find((m) => m.id.toUpperCase() === idToSearch || idToSearch.includes(m.id.toUpperCase()));
+    const found = members.find(
+      (m) => m.id.toUpperCase() === idToSearch || idToSearch.includes(m.id.toUpperCase())
+    );
 
     if (found) {
-      const active = isMemberActive(found.expiryDate, referenceDate);
-      
-      // Increment check-in count if active
+      const active = isMemberActive(found.expiryDate, referenceDate, found.remainingPasses);
+      let updatedMemberRef: Member = found;
+
+      // Increment check-in count and decrement remaining_passes if active
       if (active) {
+        const nextPasses =
+          found.remainingPasses !== null && found.remainingPasses !== undefined
+            ? Math.max(0, found.remainingPasses - 1)
+            : null;
+
         const updated = members.map((m) =>
-          m.id === found.id ? { ...m, checkIns: (m.checkIns || 0) + 1 } : m
+          m.id === found.id
+            ? { ...m, checkIns: (m.checkIns || 0) + 1, remainingPasses: nextPasses }
+            : m
         );
         saveMembersToStore(updated);
         const updatedMember = updated.find((member) => member.id === found.id);
-        if (updatedMember) syncMember(updatedMember);
+        if (updatedMember) {
+          updatedMemberRef = updatedMember;
+          syncMember(updatedMember);
+        }
 
         const checkedInAt = new Date();
         const attendanceRecord: AttendanceRecord = {
@@ -210,10 +289,25 @@ export default function App() {
         });
       }
 
-      setScannedResult({ ...found, isJustCheckedIn: true });
+      const outOfPasses =
+        !active &&
+        found.remainingPasses !== null &&
+        found.remainingPasses !== undefined &&
+        found.remainingPasses <= 0;
+
+      setScannedResult({ ...updatedMemberRef, isJustCheckedIn: active });
       setScanMessage({
         type: active ? "SUCCESS" : "EXPIRED",
-        text: active ? "Check-in Successful! Access Granted." : "Membership Expired! Access Denied.",
+        text: active
+          ? updatedMemberRef.remainingPasses !== null &&
+            updatedMemberRef.remainingPasses !== undefined
+            ? `Check-in Successful! (${updatedMemberRef.remainingPasses} pass${
+                updatedMemberRef.remainingPasses === 1 ? "" : "es"
+              } left)`
+            : "Check-in Successful! Access Granted."
+          : outOfPasses
+          ? "No Daily Passes Remaining! Access Denied."
+          : "Membership Expired! Access Denied.",
       });
     } else {
       setScannedResult(null);
@@ -228,7 +322,11 @@ export default function App() {
     const updated = members.map((member) => {
       if (member.id !== memberId) return member;
 
-      const currentlyActive = isMemberActive(member.expiryDate, referenceDate);
+      const currentlyActive = isMemberActive(
+        member.expiryDate,
+        referenceDate,
+        member.remainingPasses
+      );
       const date = new Date();
       date.setDate(date.getDate() + (currentlyActive ? -1 : 30));
       return { ...member, expiryDate: date.toISOString().split("T")[0] };
@@ -242,16 +340,28 @@ export default function App() {
     const member = members.find((item) => item.id === memberId);
     if (!member) return;
 
-    const renewalStartDate = isMemberActive(member.expiryDate, referenceDate)
+    const matchedPlan = plans.find((p) => p.title === plan);
+    const renewalStartDate = isMemberActive(
+      member.expiryDate,
+      referenceDate,
+      member.remainingPasses
+    )
       ? member.expiryDate
       : referenceDate;
-    const updatedMember = {
+    const updatedMember: Member = {
       ...member,
       plan,
-      price: getPlanPrice(member.activity ?? "Gym", plan, member.isStudent ?? false),
-      expiryDate: calculateExpiryDate(plan, renewalStartDate),
+      price: getPlanPrice(
+        member.activity ?? "Gym",
+        plan,
+        member.isStudent ?? false,
+        plans
+      ),
+      expiryDate: calculateExpiryDate(plan, renewalStartDate, plans),
+      remainingPasses:
+        matchedPlan?.promoType === "daily_pass" ? (matchedPlan.passCount ?? 1) : null,
     };
-    const updated = members.map((item) => item.id === memberId ? updatedMember : item);
+    const updated = members.map((item) => (item.id === memberId ? updatedMember : item));
     saveMembersToStore(updated);
 
     try {
@@ -286,7 +396,11 @@ export default function App() {
         member.name.toLowerCase().includes(query) ||
         member.email.toLowerCase().includes(query) ||
         member.id.toLowerCase().includes(query);
-      const active = isMemberActive(member.expiryDate, referenceDate);
+      const active = isMemberActive(
+        member.expiryDate,
+        referenceDate,
+        member.remainingPasses
+      );
       if (statusFilter === "ACTIVE") return matchesSearch && active;
       if (statusFilter === "EXPIRED") return matchesSearch && !active;
       return matchesSearch;
@@ -294,7 +408,7 @@ export default function App() {
   }, [members, referenceDate, searchQuery, statusFilter]);
 
   const activeCount = members.filter((member) =>
-    isMemberActive(member.expiryDate, referenceDate)
+    isMemberActive(member.expiryDate, referenceDate, member.remainingPasses)
   ).length;
   const expiredCount = members.length - activeCount;
 
@@ -302,7 +416,19 @@ export default function App() {
     <div className="min-h-screen bg-transparent text-[#151d3d] font-sans pb-12 flex flex-col">
       <AppHeader activeTab={activeTab} setActiveTab={setActiveTab} activeCount={activeCount} expiredCount={expiredCount} />
       <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 flex-1 w-full">
-        {activeTab === "register" && <RegistrationTab formData={formData} setFormData={setFormData} handleRegisterSubmit={handleRegisterSubmit} lastRegisteredMember={lastRegisteredMember} handleTestScanMember={handleTestScanMember} referenceDate={referenceDate} />}
+        {activeTab === "register" && (
+          <RegistrationTab
+            formData={formData}
+            setFormData={setFormData}
+            handleRegisterSubmit={handleRegisterSubmit}
+            lastRegisteredMember={lastRegisteredMember}
+            handleTestScanMember={handleTestScanMember}
+            referenceDate={referenceDate}
+            plans={plans}
+            onAddCustomPlan={handleAddCustomPlan}
+            onDeleteCustomPlan={handleDeleteCustomPlan} /* <-- ADD THIS */
+          />
+        )}
         {activeTab === "scanner" && <ScannerTab members={members} scannedIdInput={scannedIdInput} setScannedIdInput={setScannedIdInput} performScan={performScan} isCameraActive={isCameraActive} setIsCameraActive={setIsCameraActive} scannedResult={scannedResult} setScannedResult={setScannedResult} scanMessage={scanMessage} setScanMessage={setScanMessage} referenceDate={referenceDate} />}
         {activeTab === "database" && <DatabaseTab filteredMembers={filteredMembers} searchQuery={searchQuery} setSearchQuery={setSearchQuery} statusFilter={statusFilter} setStatusFilter={setStatusFilter} setSelectedQrModalMember={setSelectedQrModalMember} handleToggleExpiry={handleToggleExpiry} handleRenewMember={handleRenewMember} handleTestScanMember={handleTestScanMember} handleDeleteMember={handleDeleteMember} referenceDate={referenceDate} />}
         {activeTab === "attendance" && <AttendanceTab attendance={attendance} referenceDate={referenceDate} />}
