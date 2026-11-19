@@ -266,6 +266,16 @@ export default function ScannerTab({ members, scannedIdInput, setScannedIdInput,
                     </span>
                   </div>
 
+                  {scanMessage && (
+                    <div role="status" aria-live="polite" className={`mb-6 rounded-xl border p-3 text-sm font-medium ${
+                      scanMessage.type === "SUCCESS"
+                        ? "bg-[#5d70c7]/10 border-[#5d70c7]/30 text-[#151d3d]"
+                        : "bg-[#f26173]/10 border-[#f26173]/30 text-[#f26173]"
+                    }`}>
+                      {scanMessage.text}
+                    </div>
+                  )}
+
                   {/* Member Profile Card */}
                   <div className="flex items-start gap-3 sm:gap-4 mb-6">
                     <div className="w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-2xl bg-gradient-to-tr from-[#e4e6f0] to-[#d4d8ea] flex items-center justify-center text-[#151d3d] text-xl font-bold border border-[#d4d8ea]">

@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   getGymDate,
-  consumeDailyPass,
+  checkInMemberForDate,
+  getCheckInMessage,
   calculateExpiryDate,
   DEFAULT_MEMBERSHIP_PLANS,
   DEFAULT_REFERENCE_DATE,
@@ -18,7 +19,7 @@ import {
   type ScanResult,
 } from "@/lib/gym-members";
 import {
-  checkInPassOncePerDay,
+  checkInMemberOncePerDay,
   createMembershipPlan,
   deleteMembershipPlan,
   deleteMemberFromDatabase,
@@ -26,7 +27,6 @@ import {
   fetchMembershipPlans,
   recordMembershipRenewal,
   fetchAttendance,
-  recordAttendance,
   upsertMember,
 } from "@/lib/member-repository";
 
@@ -264,80 +264,22 @@ export default function App() {
     );
 
     if (found) {
-      if (found.remainingPasses != null) {
-        const remote = await checkInPassOncePerDay(found.id);
-        const updatedMember = remote?.member ?? consumeDailyPass(found, scanDate);
-        const existing = JSON.parse(localStorage.getItem("gym_attendance_v1") ?? "[]") as AttendanceRecord[];
-        const alreadyToday = found.lastPassDate === scanDate;
-        const record: AttendanceRecord = remote?.attendance ?? (alreadyToday ? existing.find(r => r.memberId === found.id && r.activity === found.activity && r.date === scanDate) : undefined) ?? {
-          id: `${found.id}-pass-${scanDate}`, memberId: found.id, memberName: found.name, activity: found.activity, date: scanDate, checkedInAt: new Date().toISOString()
-        };
-        saveMembersToStore(currentMembers.map(m => m.id === found.id ? updatedMember : m));
-        const next = [record, ...existing.filter(r => r.id !== record.id)];
-        setAttendance(next); localStorage.setItem("gym_attendance_v1", JSON.stringify(next));
-        setScannedResult({...updatedMember, isJustCheckedIn: true});
-        setScanMessage({type:"SUCCESS", text: (remote ? !remote.consumed : alreadyToday) ? `Already checked in today. No extra pass used (${updatedMember.remainingPasses} left).` : `Check-in successful. One day used (${updatedMember.remainingPasses} passes left).`});
-        return;
-      }
-      const active = isMemberActive(found.expiryDate, scanDate, found.remainingPasses, found.lastPassDate);
-      let updatedMemberRef: Member = found;
-
-      // Increment check-in count and decrement remaining_passes if active
-      if (active) {
-        const nextPasses =
-          found.remainingPasses !== null && found.remainingPasses !== undefined
-            ? Math.max(0, found.remainingPasses - 1)
-            : null;
-
-        const updated = members.map((m) =>
-          m.id === found.id
-            ? { ...m, checkIns: (m.checkIns || 0) + 1, remainingPasses: nextPasses }
-            : m
-        );
-        saveMembersToStore(updated);
-        const updatedMember = updated.find((member) => member.id === found.id);
-        if (updatedMember) {
-          updatedMemberRef = updatedMember;
-          syncMember(updatedMember);
-        }
-
-        const checkedInAt = new Date();
-        const attendanceRecord: AttendanceRecord = {
-          id: `${found.id}-${checkedInAt.getTime()}-${Math.random().toString(36).slice(2, 8)}`,
-          memberId: found.id,
-          memberName: found.name,
-          activity: found.activity,
-          date: getGymDate(checkedInAt),
-          checkedInAt: checkedInAt.toISOString(),
-        };
-        const updatedAttendance = [attendanceRecord, ...attendance];
-        setAttendance(updatedAttendance);
-        localStorage.setItem("gym_attendance_v1", JSON.stringify(updatedAttendance));
-        recordAttendance(attendanceRecord).catch((error: unknown) => {
-          console.error("Unable to synchronize attendance with Supabase:", error);
-        });
-      }
-
-      const outOfPasses =
-        !active &&
-        found.remainingPasses !== null &&
-        found.remainingPasses !== undefined &&
-        found.remainingPasses <= 0;
-
-      setScannedResult({ ...updatedMemberRef, isJustCheckedIn: active });
-      setScanMessage({
-        type: active ? "SUCCESS" : "EXPIRED",
-        text: active
-          ? updatedMemberRef.remainingPasses !== null &&
-            updatedMemberRef.remainingPasses !== undefined
-            ? `Check-in Successful! (${updatedMemberRef.remainingPasses} pass${
-                updatedMemberRef.remainingPasses === 1 ? "" : "es"
-              } left)`
-            : "Check-in Successful! Access Granted."
-          : outOfPasses
-          ? "No Daily Passes Remaining! Access Denied."
-          : "Membership Expired! Access Denied.",
-      });
+      const remote = await checkInMemberOncePerDay(found.id);
+      const existing = JSON.parse(localStorage.getItem("gym_attendance_v1") ?? "[]") as AttendanceRecord[];
+      const localMember = found.remainingPasses == null && existing.some(r => r.memberId === found.id && r.activity === found.activity && r.date === scanDate)
+        ? {...found, lastCheckInDate: scanDate} : found;
+      const updatedMember = remote?.member ?? checkInMemberForDate(localMember, scanDate);
+      const alreadyToday = remote?.alreadyToday ?? (localMember.lastCheckInDate === scanDate || (localMember.remainingPasses != null && localMember.lastPassDate === scanDate));
+      const record: AttendanceRecord = remote?.attendance ?? (alreadyToday ? existing.find(r => r.memberId === found.id && r.activity === found.activity && r.date === scanDate) : undefined) ?? {
+        id: `${found.id}-attendance-${scanDate}`, memberId: found.id, memberName: found.name,
+        activity: found.activity, date: scanDate, checkedInAt: new Date().toISOString()
+      };
+      saveMembersToStore(currentMembers.map(m => m.id === found.id ? updatedMember : m));
+      const next = [record, ...existing.filter(r => r.id !== record.id)];
+      setAttendance(next);
+      localStorage.setItem("gym_attendance_v1", JSON.stringify(next));
+      setScannedResult({...updatedMember, isJustCheckedIn: true});
+      setScanMessage({type:"SUCCESS", text: getCheckInMessage(alreadyToday, updatedMember.remainingPasses)});
     } else {
       setScannedResult(null);
       setScanMessage({

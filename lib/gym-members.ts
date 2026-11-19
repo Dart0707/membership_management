@@ -27,6 +27,7 @@ export type Member = {
   checkIns: number;
   remainingPasses: number | null;
   lastPassDate?: string | null;
+  lastCheckInDate?: string | null;
 };
 
 export type MemberFormData = Pick<
@@ -167,4 +168,18 @@ export function consumeDailyPass(member: Member, date: string): Member {
   if (!isMemberActive(member.expiryDate, date, member.remainingPasses, member.lastPassDate)) throw new Error("Membership expired or no passes remaining.");
   if (member.remainingPasses == null || member.lastPassDate === date) return member;
   return {...member, remainingPasses: member.remainingPasses - 1, lastPassDate: date, checkIns: member.checkIns + 1};
+}
+
+export function checkInMemberForDate(member: Member, date: string): Member {
+  if (getDaysRemaining(member.expiryDate, date) < 0) throw new Error("Membership expired.");
+  const alreadyToday = member.lastCheckInDate === date || (member.remainingPasses != null && member.lastPassDate === date);
+  if (alreadyToday) return member;
+  if (member.remainingPasses != null && member.remainingPasses <= 0) throw new Error("No passes remaining.");
+  return {...member, lastCheckInDate: date, checkIns: member.checkIns + 1,
+    ...(member.remainingPasses != null ? {remainingPasses: member.remainingPasses - 1, lastPassDate: date} : {})};
+}
+
+export function getCheckInMessage(alreadyToday: boolean, remainingPasses: number | null) {
+  if (alreadyToday) return "Member has already checked in today. Re-entry allowed; no additional attendance or pass counted.";
+  return remainingPasses == null ? "Check-in successful! Access granted." : `Check-in successful. One day used (${remainingPasses} passes left).`;
 }
